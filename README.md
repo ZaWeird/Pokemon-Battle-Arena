@@ -4,6 +4,7 @@ A SS2 project..
 INSTALL GUIDE
 
 BACKEND:
+
 cd backend
 
 python -m venv venv
@@ -15,6 +16,7 @@ pip install -r requirements.txt
 python app.py
 
 FRONTEND:
+
 cd frontend
 
 npm install
