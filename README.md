@@ -1,9 +1,9 @@
 # Pokemon-Battle-Arena
 A SS2 project..
 
-INSTALL GUIDE
+-----------------INSTALL GUIDE-----------------
 
-BACKEND:
+--------------------BACKEND:-------------------
 
 cd backend
 
@@ -15,7 +15,7 @@ pip install -r requirements.txt
 
 python app.py
 
-FRONTEND:
+--------------------FRONTEND:------------------
 
 cd frontend
 
