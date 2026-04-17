@@ -1,5 +1,6 @@
+// frontend/src/App.jsx
 import React, { useState, useEffect } from 'react'
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import Auth from './components/Auth'
 import Gacha from './components/Gacha'
@@ -9,10 +10,14 @@ import Battle from './components/Battle'
 import Lobby from './components/Lobby'
 import Leaderboard from './components/Leaderboard'
 import './App.css'
+import PokeAPIFetcher from './components/PokeAPIFetcher';
 
-function App() {
+function AppContent() {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  const location = useLocation()
+
+  const isBattlePage = location.pathname.includes('/battle/')
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -40,54 +45,65 @@ function App() {
   }
 
   return (
-    <Router>
-      <div className="app">
-        <Toaster position="top-right" />
-        
-        {user && (
-          <nav className="navbar">
-            <div className="nav-brand">Pokémon Battle Arena</div>
-            <div className="nav-menu">
-              <a href="/lobby">Lobby</a>
-              <a href="/gacha">Gacha</a>
-              <a href="/inventory">Inventory</a>
-              <a href="/team">Team Builder</a>
-              <a href="/leaderboard">Leaderboard</a>
-            </div>
-            <div className="nav-user">
-              <span>{user.username}</span>
-              <span className="coins">💰 {user.coins}</span>
-              <button onClick={handleLogout} className="btn-logout">Logout</button>
-            </div>
-          </nav>
-        )}
+    <div className="app">
+      <Toaster position="top-right" />
 
-        <div className="container">
-          <Routes>
-            <Route path="/" element={
-              user ? <Navigate to="/lobby" /> : <Auth onLogin={handleLogin} />
-            } />
-            <Route path="/lobby" element={
-              user ? <Lobby user={user} /> : <Navigate to="/" />
-            } />
-            <Route path="/gacha" element={
-              user ? <Gacha user={user} setUser={setUser} /> : <Navigate to="/" />
-            } />
-            <Route path="/inventory" element={
-              user ? <Inventory user={user} /> : <Navigate to="/" />
-            } />
-            <Route path="/team" element={
-              user ? <TeamBuilder user={user} /> : <Navigate to="/" />
-            } />
-            <Route path="/battle/:roomId" element={
-              user ? <Battle user={user} /> : <Navigate to="/" />
-            } />
-            <Route path="/leaderboard" element={
-              user ? <Leaderboard /> : <Navigate to="/" />
-            } />
-          </Routes>
-        </div>
+      {/* Only show navigation if not on battle page */}
+      {user && !isBattlePage && (
+        <nav className="navbar">
+          <div className="nav-brand">Pokemon Battle Arena</div>
+          <div className="nav-menu">
+            <a href="/lobby">Lobby</a>
+            <a href="/gacha">Gacha</a>
+            <a href="/inventory">Inventory</a>
+            <a href="/team">Team Builder</a>
+            <a href="/leaderboard">Leaderboard</a>
+            <a href="/pokeapi">PokeAPI</a>
+          </div>
+          <div className="nav-user">
+            <span>{user.username}</span>
+            <span className="coins">Coins: {user.coins}</span>
+            <button onClick={handleLogout} className="btn-logout">Logout</button>
+          </div>
+        </nav>
+      )}
+
+      <div className="container">
+        <Routes>
+          <Route path="/" element={
+            user ? <Navigate to="/lobby" /> : <Auth onLogin={handleLogin} />
+          } />
+          <Route path="/lobby" element={
+            user ? <Lobby user={user} setUser={setUser} /> : <Navigate to="/" />
+          } />
+          <Route path="/gacha" element={
+            user ? <Gacha user={user} setUser={setUser} /> : <Navigate to="/" />
+          } />
+          <Route path="/inventory" element={
+            user ? <Inventory user={user} /> : <Navigate to="/" />
+          } />
+          <Route path="/team" element={
+            user ? <TeamBuilder user={user} /> : <Navigate to="/" />
+          } />
+          <Route path="/battle/:roomId" element={
+            user ? <Battle user={user} setUser={setUser} /> : <Navigate to="/" />
+          } />
+          <Route path="/leaderboard" element={
+            user ? <Leaderboard /> : <Navigate to="/" />
+          } />
+          <Route path="/pokeapi" element={
+            user ? <PokeAPIFetcher /> : <Navigate to="/" />
+          } />
+        </Routes>
       </div>
+    </div>
+  )
+}
+
+function App() {
+  return (
+    <Router>
+      <AppContent />
     </Router>
   )
 }
