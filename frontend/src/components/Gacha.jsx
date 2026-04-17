@@ -1,3 +1,4 @@
+// frontend/src/components/Gacha.jsx
 import React, { useState } from 'react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
@@ -6,6 +7,22 @@ function Gacha({ user, setUser }) {
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState([])
   const [showResults, setShowResults] = useState(false)
+
+  // Function to refresh user data from backend
+  const refreshUserData = async () => {
+    try {
+      const response = await axios.get('/api/profile', {
+        headers: { Authorization: localStorage.getItem('token') }
+      })
+      if (setUser) {
+        setUser(response.data)
+        // Update localStorage
+        localStorage.setItem('user', JSON.stringify(response.data))
+      }
+    } catch (error) {
+      console.error('Failed to refresh user data:', error)
+    }
+  }
 
   const handleSummon = async (type) => {
     if (type === 'single' && user.coins < 100) {
@@ -29,9 +46,11 @@ function Gacha({ user, setUser }) {
 
       setResults(response.data.results)
       setShowResults(true)
-      setUser({ ...user, coins: response.data.remaining_coins })
       
-      toast.success(`Summoned ${response.data.results.length} Pokémon!`)
+      // Refresh user data to get updated coins
+      await refreshUserData()
+      
+      toast.success(`Summoned ${response.data.results.length} Pokemon!`)
     } catch (error) {
       toast.error(error.response?.data?.message || 'Summon failed')
     } finally {
@@ -52,7 +71,7 @@ function Gacha({ user, setUser }) {
   return (
     <div className="gacha-container">
       <div className="card">
-        <h2 className="card-title">Pokémon Gacha</h2>
+        <h2 className="card-title">Pokemon Gacha</h2>
         
         <div className="gacha-info">
           <p>Your Coins: <strong>{user.coins}</strong></p>
@@ -79,7 +98,7 @@ function Gacha({ user, setUser }) {
 
         {loading && (
           <div className="loading-spinner">
-            <p>Summoning Pokémon...</p>
+            <p>Summoning Pokemon...</p>
           </div>
         )}
 

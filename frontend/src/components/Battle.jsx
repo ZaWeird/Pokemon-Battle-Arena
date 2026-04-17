@@ -3,11 +3,21 @@ import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import io from 'socket.io-client'
 import toast from 'react-hot-toast'
+import axios from 'axios'
 
-function Battle({ user }) {
+function Battle({ user, setUser }) {
   const { roomId } = useParams()
   const navigate = useNavigate()
   const [socket, setSocket] = useState(null)
+  const [showQuitConfirm, setShowQuitConfirm] = useState(false)
+  const [showResult, setShowResult] = useState(false)
+  const [battleResult, setBattleResult] = useState({
+    result: '',
+    resultText: '',
+    coinsGained: 0,
+    xpGained: 0,
+    items: []
+  })
   const [battle, setBattle] = useState({
     player: { 
       hp: [], 
@@ -24,33 +34,40 @@ function Battle({ user }) {
     turn: null,
     battleLog: []
   })
-  const [chatMessage, setChatMessage] = useState('')
-  const [messages, setMessages] = useState([])
   const [loading, setLoading] = useState(true)
 
+  // Function to refresh user data from backend
+  const refreshUserData = async () => {
+    try {
+      const response = await axios.get('/api/profile', {
+        headers: { Authorization: localStorage.getItem('token') }
+      })
+      if (setUser) {
+        setUser(response.data)
+        // Update localStorage
+        localStorage.setItem('user', JSON.stringify(response.data))
+      }
+    } catch (error) {
+      console.error('Failed to refresh user data:', error)
+    }
+  }
+
   useEffect(() => {
-    console.log('Setting up battle connection for room:', roomId)
-    console.log('User:', user)
+    console.log('Setting up PvE battle connection for room:', roomId)
     
     const newSocket = io('http://localhost:5000')
     setSocket(newSocket)
 
-    // Join the battle room
     newSocket.emit('join_battle', {
         user_id: user.id,
         room: roomId
     })
 
-    // Battle started event
     newSocket.on('battle_started', (data) => {
         console.log('Battle started data:', data)
         
-        // Set player's own Pokemon (from the server)
         const playerPokemon = data.player_pokemon || []
         const opponentPokemon = data.opponent_pokemon || []
-        
-        console.log('Player Pokemon:', playerPokemon)
-        console.log('Opponent Pokemon:', opponentPokemon)
         
         setBattle({
             player: {
@@ -73,24 +90,10 @@ function Battle({ user }) {
         toast.success('Battle started!')
     })
 
-    // Waiting for opponent (PvP)
-    newSocket.on('waiting_for_opponent', (data) => {
-        setLoading(false)
-        toast('Waiting for opponent...', { icon: '⏳' })
-    })
-
-    // Player joined (PvP)
-    newSocket.on('player_joined', (data) => {
-        toast.success('Opponent found!')
-    })
-
-    // Battle update (turn progress)
     newSocket.on('battle_update', (data) => {
-        console.log('Battle update:', data)
         setBattle(prev => {
             const newBattle = { ...prev }
             
-            // Update HP for both players
             data.hp_updates.forEach(update => {
                 if (update.player === user.id) {
                     newBattle.player.hp = update.hp
@@ -101,7 +104,6 @@ function Battle({ user }) {
                 }
             })
             
-            // Update current Pokemon indices if provided
             if (data.current_pokemon) {
                 if (data.current_pokemon[user.id] !== undefined) {
                     newBattle.currentPokemon = data.current_pokemon[user.id]
@@ -111,7 +113,6 @@ function Battle({ user }) {
                 }
             }
             
-            // Add to battle log
             newBattle.turn = data.next_turn
             newBattle.battleLog = [...newBattle.battleLog, data.log]
             
@@ -119,63 +120,59 @@ function Battle({ user }) {
         })
     })
 
-    // Battle ended
-    newSocket.on('battle_ended', (data) => {
-        console.log('Battle ended:', data)
-        const isWinner = data.winner === user.id || data.winner === 'user'
+    newSocket.on('battle_ended', async (data) => {
+        const isWinner = data.winner === user.id
+        
+        let coinsGained = 0
+        let xpGained = 0
+        let resultText = ''
         
         if (isWinner) {
-            toast.success('You won!')
+            coinsGained = 50
+            xpGained = 20
+            resultText = 'Victory!'
+            toast.success('Victory! You won the battle!')
         } else {
-            toast.error('You lost!')
+            coinsGained = 20
+            xpGained = 10
+            resultText = 'Defeat!'
+            toast.error('Defeat! Better luck next time!')
         }
+        
+        // Refresh user data from backend to get updated coins
+        await refreshUserData()
+        
+        setBattleResult({
+            result: isWinner ? 'win' : 'lose',
+            resultText: resultText,
+            coinsGained: coinsGained,
+            xpGained: xpGained,
+            items: []
+        })
         
         setBattle(prev => ({
             ...prev,
             battleLog: [...prev.battleLog, ...(data.log || [])]
         }))
         
-        // Return to lobby after 5 seconds
-        setTimeout(() => {
-            navigate('/lobby')
-        }, 5000)
+        setShowResult(true)
     })
 
-    // Chat message
-    newSocket.on('chat_message', (data) => {
-        setMessages(prev => [...prev, data])
-    })
-
-    // Player left
-    newSocket.on('player_left', (data) => {
-        toast.error('Opponent left the battle')
-        setTimeout(() => {
-            navigate('/lobby')
-        }, 3000)
-    })
-
-    // Error event
     newSocket.on('error', (data) => {
         toast.error(data.message)
         console.error('Socket error:', data)
     })
 
-    // Cleanup on unmount
     return () => {
         console.log('Cleaning up battle connection')
         if (newSocket) {
-            newSocket.emit('leave_battle', {
-                user_id: user.id,
-                room: roomId
-            })
             newSocket.disconnect()
         }
     }
-  }, [roomId, user.id, navigate])
+  }, [roomId, user.id, navigate, setUser])
 
   const handleAttack = () => {
     if (socket && battle.turn === user.id) {
-      console.log('Attacking...')
       socket.emit('battle_action', {
         room: roomId,
         user_id: user.id,
@@ -189,7 +186,6 @@ function Battle({ user }) {
   const handleSwitch = (pokemonIndex) => {
     if (socket && battle.turn === user.id) {
       if (battle.player.hp[pokemonIndex] > 0) {
-        console.log('Switching to pokemon:', pokemonIndex)
         socket.emit('battle_action', {
           room: roomId,
           user_id: user.id,
@@ -204,19 +200,23 @@ function Battle({ user }) {
     }
   }
 
-  const sendMessage = (e) => {
-    e.preventDefault()
-    if (chatMessage.trim() && socket) {
-      socket.emit('battle_chat', {
-        room: roomId,
-        message: chatMessage,
-        username: user.username
-      })
-      setChatMessage('')
+  const handleQuit = async () => {
+    if (socket) {
+      socket.disconnect()
     }
+    // Refresh user data when quitting
+    await refreshUserData()
+    navigate('/lobby')
+    toast.success('Left battle')
   }
 
-  // Get current Pokemon for player and opponent
+  const closeResultModal = async () => {
+    // Refresh user data before leaving
+    await refreshUserData()
+    setShowResult(false)
+    navigate('/lobby')
+  }
+
   const currentPlayerPokemon = battle.player.pokemon && battle.player.pokemon.length > 0 
     ? battle.player.pokemon[battle.currentPokemon] 
     : null
@@ -225,7 +225,6 @@ function Battle({ user }) {
     ? battle.opponent.pokemon[battle.opponentCurrentPokemon] 
     : null
 
-  // Calculate HP percentages
   const playerHpPercent = currentPlayerPokemon && battle.player.hp[battle.currentPokemon] !== undefined
     ? (battle.player.hp[battle.currentPokemon] / (battle.player.max_hp[battle.currentPokemon] || currentPlayerPokemon.hp)) * 100
     : 0
@@ -248,6 +247,72 @@ function Battle({ user }) {
 
   return (
     <div className="battle-arena">
+      {/* Quit Button */}
+      <button 
+        className="quit-button"
+        onClick={() => setShowQuitConfirm(true)}
+      >
+        Quit Battle
+      </button>
+
+      {/* Confirm Quit Modal */}
+      {showQuitConfirm && (
+        <div className="modal-overlay">
+          <div className="modal-content confirm-modal">
+            <h3>Confirm Quit</h3>
+            <p>Are you sure you want to quit this battle?</p>
+            <p>You will not receive any rewards!</p>
+            <div className="modal-buttons">
+              <button 
+                className="btn-confirm"
+                onClick={handleQuit}
+              >
+                Yes, Quit
+              </button>
+              <button 
+                className="btn-cancel"
+                onClick={() => setShowQuitConfirm(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Battle Result Modal */}
+      {showResult && (
+        <div className="modal-overlay">
+          <div className="modal-content result-modal">
+            <h2 className={`result-title ${battleResult.result}`}>
+              {battleResult.resultText}
+            </h2>
+            <div className="result-details">
+              <div className="result-item">
+                <span className="result-label">Coins Gained:</span>
+                <span className="result-value">+{battleResult.coinsGained}</span>
+              </div>
+              <div className="result-item">
+                <span className="result-label">Experience Gained:</span>
+                <span className="result-value">+{battleResult.xpGained} XP</span>
+              </div>
+              {battleResult.items.length > 0 && (
+                <div className="result-item">
+                  <span className="result-label">Items Gained:</span>
+                  <span className="result-value">{battleResult.items.join(', ')}</span>
+                </div>
+              )}
+            </div>
+            <button 
+              className="btn-continue"
+              onClick={closeResultModal}
+            >
+              Continue
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="battle-field">
         <div className="battle-player">
           <h3>{user.username}</h3>
@@ -280,7 +345,6 @@ function Battle({ user }) {
             </div>
           )}
           
-          {/* Show player's Pokemon team */}
           <div className="player-team-list">
             <h4>Your Team:</h4>
             <div className="team-mini-list">
@@ -306,12 +370,12 @@ function Battle({ user }) {
           ) : battle.turn === 'ai' ? (
             <p className="opponent-turn">AI Thinking...</p>
           ) : (
-            <p className="opponent-turn">Opponent's Turn</p>
+            <p className="opponent-turn">Waiting...</p>
           )}
         </div>
 
         <div className="battle-opponent">
-          <h3>{roomId.startsWith('pve_') ? 'AI' : 'Opponent'}</h3>
+          <h3>AI Opponent</h3>
           {currentOpponentPokemon ? (
             <div className="pokemon-battle-card">
               <img 
@@ -340,7 +404,6 @@ function Battle({ user }) {
             </div>
           )}
           
-          {/* Show opponent's Pokemon team */}
           <div className="opponent-team-list">
             <h4>Opponent's Team:</h4>
             <div className="team-mini-list">
@@ -377,31 +440,6 @@ function Battle({ user }) {
           Attack
         </button>
       </div>
-
-      {/* Chat section for PvP battles */}
-      {!roomId.startsWith('pve_') && (
-        <div className="battle-chat">
-          <h4>Battle Chat</h4>
-          <div className="chat-messages">
-            {messages.map((msg, index) => (
-              <div key={index} className="chat-message">
-                <strong>{msg.username}:</strong> {msg.message}
-              </div>
-            ))}
-          </div>
-          
-          <form onSubmit={sendMessage} className="chat-input">
-            <input
-              type="text"
-              value={chatMessage}
-              onChange={(e) => setChatMessage(e.target.value)}
-              placeholder="Type a message..."
-              maxLength={100}
-            />
-            <button type="submit">Send</button>
-          </form>
-        </div>
-      )}
     </div>
   )
 }
