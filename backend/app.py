@@ -1,6 +1,6 @@
-from flask import Flask, request, jsonify, session
+from flask import Flask, request, jsonify
 from flask_cors import CORS
-from flask_socketio import join_room, leave_room, emit, send
+from flask_socketio import join_room, leave_room, emit
 from database import db, socketio
 from config import Config
 from models import User, Pokemon, UserPokemon, Battle, GachaHistory
@@ -10,12 +10,16 @@ from functools import wraps
 import jwt
 from datetime import datetime, timedelta
 import time
+from gen1_damage import calculate_damage, is_critical_hit, prepare_pokemon_for_damage, prepare_move_for_damage, calculate_move_accuracy
+import threading
+from pokeapi_service import get_pokemon_from_api, add_pokemon_to_database, fetch_pokemon_by_generation, get_random_pokemon_from_db, get_pokemon_by_rarity
 
 app = Flask(__name__)
 app.config.from_object(Config)
 CORS(app, supports_credentials=True)
 db.init_app(app)
 socketio.init_app(app, cors_allowed_origins="*")
+
 
 # Authentication decorator
 def token_required(f):
@@ -167,7 +171,7 @@ def summon_pokemon(current_user):
     data = request.json
     summon_type = data.get('type', 'single')  # 'single' or 'ten'
     
-    cost = 100 if summon_type == 'single' else 900  # 10x summon discount
+    cost = 100 if summon_type == 'single' else 900
     
     if current_user.coins < cost:
         return jsonify({'message': 'Insufficient coins'}), 400
@@ -183,6 +187,11 @@ def summon_pokemon(current_user):
     results = []
     summon_count = 1 if summon_type == 'single' else 10
     
+    # Check if we have Pokemon in database
+    pokemon_count = Pokemon.query.count()
+    if pokemon_count == 0:
+        return jsonify({'message': 'No Pokemon available. Please fetch Pokemon first.'}), 400
+    
     for _ in range(summon_count):
         # Determine rarity
         rand = random.random()
@@ -196,7 +205,16 @@ def summon_pokemon(current_user):
                 break
         
         # Get random Pokemon of selected rarity
-        pokemon = Pokemon.query.filter_by(rarity=selected_rarity).order_by(db.func.random()).first()
+        pokemon_list = Pokemon.query.filter_by(rarity=selected_rarity).all()
+        
+        if not pokemon_list:
+            # Fallback to any Pokemon
+            pokemon_list = Pokemon.query.all()
+        
+        pokemon = random.choice(pokemon_list) if pokemon_list else None
+        
+        if not pokemon:
+            continue
         
         # Add to user's collection
         user_pokemon = UserPokemon(
@@ -309,18 +327,6 @@ def start_pve_battle(current_user):
         'message': 'PvE battle created'
     })
 
-# NEW: PvP Queue endpoint
-@app.route('/api/battle/pvp/queue', methods=['POST'])
-@token_required
-def join_pvp_queue(current_user):
-    # Create a unique room ID
-    room_id = f"pvp_{current_user.id}_{int(time.time())}"
-    
-    return jsonify({
-        'roomId': room_id,
-        'message': 'Joined PvP queue'
-    })
-
 # Socket.IO events for battle system
 active_battles = {}
 
@@ -329,105 +335,97 @@ def handle_join_battle(data):
     user_id = data['user_id']
     room = data['room']
     
-    print(f"User {user_id} joining battle room: {room}")
+    print(f"User {user_id} joining PvE battle room: {room}")
     join_room(room)
     
-    # Check if it's a PvE battle (room starts with "pve_")
-    if room.startswith('pve_'):
-        # Get player's team
-        player_team = UserPokemon.query.filter_by(
-            user_id=user_id, 
-            is_in_team=True
-        ).order_by(UserPokemon.team_position).all()
-        
-        # If no team selected, get any 3 pokemon
-        if not player_team or len(player_team) == 0:
-            player_team = UserPokemon.query.filter_by(user_id=user_id).limit(3).all()
-        
-        # If still no pokemon, create some for testing
-        if not player_team or len(player_team) == 0:
-            # Get some default pokemon
-            default_pokemon = Pokemon.query.limit(3).all()
-            player_team = []
-            for p in default_pokemon:
-                up = UserPokemon(
-                    user_id=user_id,
-                    pokemon_id=p.id,
-                    level=5
-                )
-                # Add to session but don't commit yet
-                db.session.add(up)
-                player_team.append(up)
-            db.session.commit()
-        
-        # Create AI opponent (random Pokemon)
-        ai_pokemon = Pokemon.query.order_by(db.func.random()).limit(3).all()
-        
-        # Prepare player Pokemon data
-        player_pokemon_data = []
-        for p in player_team:
-            pokemon_data = {
-                'id': p.pokemon.id,
-                'name': p.pokemon.name,
-                'hp': p.pokemon.hp,
-                'max_hp': p.pokemon.hp,
-                'attack': p.pokemon.attack,
-                'defense': p.pokemon.defense,
-                'speed': p.pokemon.speed,
-                'image_url': p.pokemon.image_url,
-                'level': p.level
-            }
-            player_pokemon_data.append(pokemon_data)
-            print(f"Player Pokemon: {pokemon_data['name']} - HP: {pokemon_data['hp']}")
-        
-        # Prepare AI Pokemon data
-        ai_pokemon_data = []
-        for p in ai_pokemon:
-            pokemon_data = {
-                'id': p.id,
-                'name': p.name,
-                'hp': p.hp,
-                'max_hp': p.hp,
-                'attack': p.attack,
-                'defense': p.defense,
-                'speed': p.speed,
-                'image_url': p.image_url
-            }
-            ai_pokemon_data.append(pokemon_data)
-            print(f"AI Pokemon: {pokemon_data['name']} - HP: {pokemon_data['hp']}")
-        
-        # Store battle state
-        active_battles[room] = {
-            'players': {
-                user_id: {
-                    'hp': [p.pokemon.hp for p in player_team],
-                    'max_hp': [p.pokemon.hp for p in player_team],
-                    'pokemon': player_pokemon_data,
-                    'current_pokemon': 0
-                },
-                'ai': {
-                    'hp': [p.hp for p in ai_pokemon],
-                    'max_hp': [p.hp for p in ai_pokemon],
-                    'pokemon': ai_pokemon_data,
-                    'current_pokemon': 0
-                }
-            },
-            'turn': user_id,  # Player goes first
-            'battle_log': ['Battle started!']
+    # Get player's team
+    player_team = UserPokemon.query.filter_by(
+        user_id=user_id, 
+        is_in_team=True
+    ).order_by(UserPokemon.team_position).all()
+    
+    # If no team selected, get any 3 pokemon
+    if not player_team or len(player_team) == 0:
+        player_team = UserPokemon.query.filter_by(user_id=user_id).limit(3).all()
+    
+    # If still no pokemon, create some for testing
+    if not player_team or len(player_team) == 0:
+        default_pokemon = Pokemon.query.limit(3).all()
+        player_team = []
+        for p in default_pokemon:
+            up = UserPokemon(
+                user_id=user_id,
+                pokemon_id=p.id,
+                level=5
+            )
+            db.session.add(up)
+            player_team.append(up)
+        db.session.commit()
+    
+    # Create AI opponent (random Pokemon)
+    ai_pokemon = Pokemon.query.order_by(db.func.random()).limit(3).all()
+    
+    # Prepare player Pokemon data
+    player_pokemon_data = []
+    for p in player_team:
+        pokemon_data = {
+            'id': p.pokemon.id,
+            'name': p.pokemon.name,
+            'hp': p.pokemon.hp,
+            'max_hp': p.pokemon.hp,
+            'attack': p.pokemon.attack,
+            'defense': p.pokemon.defense,
+            'speed': p.pokemon.speed,
+            'image_url': p.pokemon.image_url,
+            'level': p.level
         }
-        
-        print(f"PvE Battle started in room {room}")
-        print(f"Player team: {[p['name'] for p in active_battles[room]['players'][user_id]['pokemon']]}")
-        print(f"AI team: {[p['name'] for p in active_battles[room]['players']['ai']['pokemon']]}")
-        
-        # Send battle start event with BOTH player's and opponent's Pokemon
-        emit('battle_started', {
-            'room': room,
-            'opponent': 'AI',
-            'player_pokemon': player_pokemon_data,  # Send player's own Pokemon
-            'opponent_pokemon': ai_pokemon_data,    # Send opponent's Pokemon
-            'turn': user_id
-        }, room=room)
+        player_pokemon_data.append(pokemon_data)
+    
+    # Prepare AI Pokemon data
+    ai_pokemon_data = []
+    for p in ai_pokemon:
+        pokemon_data = {
+            'id': p.id,
+            'name': p.name,
+            'hp': p.hp,
+            'max_hp': p.hp,
+            'attack': p.attack,
+            'defense': p.defense,
+            'speed': p.speed,
+            'image_url': p.image_url
+        }
+        ai_pokemon_data.append(pokemon_data)
+    
+    # Store battle state
+    active_battles[room] = {
+        'players': {
+            user_id: {
+                'hp': [p.pokemon.hp for p in player_team],
+                'max_hp': [p.pokemon.hp for p in player_team],
+                'pokemon': player_pokemon_data,
+                'current_pokemon': 0
+            },
+            'ai': {
+                'hp': [p.hp for p in ai_pokemon],
+                'max_hp': [p.hp for p in ai_pokemon],
+                'pokemon': ai_pokemon_data,
+                'current_pokemon': 0
+            }
+        },
+        'turn': user_id,
+        'battle_log': ['Battle started!']
+    }
+    
+    print(f"PvE Battle started in room {room}")
+    
+    # Send battle start event
+    emit('battle_started', {
+        'room': room,
+        'opponent': 'AI',
+        'player_pokemon': player_pokemon_data,
+        'opponent_pokemon': ai_pokemon_data,
+        'turn': user_id
+    }, room=room)
 
 @socketio.on('battle_action')
 def handle_battle_action(data):
@@ -443,19 +441,13 @@ def handle_battle_action(data):
     
     battle = active_battles[room]
     
-    # Check if it's this player's turn
-    if battle['turn'] != user_id and 'ai' not in battle['players']:
+    # Check if it's player's turn
+    if battle['turn'] != user_id:
         emit('error', {'message': 'Not your turn!'}, room=room)
         return
     
-    # Determine opponent
-    if 'ai' in battle['players']:
-        opponent_id = 'ai'
-    else:
-        opponent_id = [p for p in battle['players'] if p != user_id][0]
-    
     player = battle['players'][user_id]
-    opponent = battle['players'][opponent_id]
+    opponent = battle['players']['ai']
     
     if action == 'attack':
         current_pokemon = player['pokemon'][player['current_pokemon']]
@@ -466,8 +458,7 @@ def handle_battle_action(data):
         defense = target_pokemon.get('defense', 50)
         level = current_pokemon.get('level', 5)
         
-        # Basic damage formula
-        damage = max(1, int(((2 * level / 5 + 2) * attack / defense / 50 + 2) * random.uniform(0.85, 1.0)))
+        damage = max(5, int(((2 * level / 5 + 2) * attack / defense / 50 + 2) * random.uniform(0.85, 1.15) * 10))
         
         opponent['hp'][opponent['current_pokemon']] -= damage
         if opponent['hp'][opponent['current_pokemon']] < 0:
@@ -477,38 +468,40 @@ def handle_battle_action(data):
         battle['battle_log'].append(log_entry)
         print(log_entry)
         
-        # Check if opponent's Pokemon fainted
+        # Check if AI's Pokemon fainted
         if opponent['hp'][opponent['current_pokemon']] <= 0:
             log_entry += f" - {target_pokemon['name']} fainted!"
             battle['battle_log'].append(f"{target_pokemon['name']} fainted!")
             print(f"{target_pokemon['name']} fainted!")
             
-            # Switch to next Pokemon
-            if opponent['current_pokemon'] < len(opponent['pokemon']) - 1:
-                opponent['current_pokemon'] += 1
-                new_pokemon = opponent['pokemon'][opponent['current_pokemon']]
-                battle['battle_log'].append(f"{opponent_id if opponent_id != 'ai' else 'AI'} sent out {new_pokemon['name']}!")
-                print(f"Switched to {new_pokemon['name']}")
+            # Check if AI has any Pokemon left that are not fainted
+            remaining_ai_pokemon = [hp for hp in opponent['hp'] if hp > 0]
+            
+            if len(remaining_ai_pokemon) > 0:
+                # Find the next AI Pokemon with HP > 0
+                next_index = -1
+                for i in range(len(opponent['hp'])):
+                    if opponent['hp'][i] > 0:
+                        next_index = i
+                        break
+                
+                if next_index != -1:
+                    opponent['current_pokemon'] = next_index
+                    new_pokemon = opponent['pokemon'][opponent['current_pokemon']]
+                    battle['battle_log'].append(f"AI sent out {new_pokemon['name']}!")
+                    print(f"AI switched to {new_pokemon['name']}")
+                else:
+                    battle['battle_log'].append("AI has no Pokemon left!")
             else:
-                # Battle ended
+                # All AI Pokemon have fainted - Player wins
                 winner = user_id
-                battle['battle_log'].append(f"{'AI' if opponent_id == 'ai' else 'Opponent'} has no Pokemon left! You win!")
+                battle['battle_log'].append("AI has no Pokemon left! You win!")
                 print(f"Battle ended, winner: {winner}")
                 
                 # Update user stats and coins
                 user = User.query.get(user_id)
-                if opponent_id != 'ai':
-                    opponent_user = User.query.get(opponent_id)
-                    user.wins += 1
-                    opponent_user.losses += 1
-                    user.rating += 25
-                    opponent_user.rating -= 10
-                    user.coins += 100
-                    opponent_user.coins += 20
-                else:
-                    user.wins += 1
-                    user.coins += 50
-                
+                user.wins += 1
+                user.coins += 50
                 db.session.commit()
                 
                 emit('battle_ended', {
@@ -516,33 +509,28 @@ def handle_battle_action(data):
                     'log': battle['battle_log']
                 }, room=room)
                 
-                # Clean up
                 del active_battles[room]
                 return
         
-        # Switch turn
-        if opponent_id == 'ai':
-            battle['turn'] = 'ai'
-        else:
-            battle['turn'] = opponent_id
+        # Switch turn to AI
+        battle['turn'] = 'ai'
         
         emit('battle_update', {
             'hp_updates': [
                 {'player': user_id, 'hp': player['hp'], 'max_hp': player['max_hp']},
-                {'player': opponent_id, 'hp': opponent['hp'], 'max_hp': opponent['max_hp']}
+                {'player': 'ai', 'hp': opponent['hp'], 'max_hp': opponent['max_hp']}
             ],
             'log': log_entry,
             'next_turn': battle['turn'],
             'current_pokemon': {
                 user_id: player['current_pokemon'],
-                opponent_id: opponent['current_pokemon']
+                'ai': opponent['current_pokemon']
             }
         }, room=room)
         
-        # If it's AI's turn, make AI move after a short delay
-        if opponent_id == 'ai' and battle['turn'] == 'ai':
-            socketio.sleep(1)
-            make_ai_move(room)
+        # Make AI move after delay
+        socketio.sleep(1)
+        make_ai_move(room)
     
     elif action == 'switch':
         pokemon_index = data.get('pokemon_index', 0)
@@ -551,36 +539,34 @@ def handle_battle_action(data):
             player['current_pokemon'] = pokemon_index
             current_pokemon = player['pokemon'][pokemon_index]
             
-            log_entry = f"Player switched to {current_pokemon['name']}"
+            log_entry = f"You switched to {current_pokemon['name']}"
             battle['battle_log'].append(log_entry)
             print(log_entry)
             
-            # Switch turn
-            if opponent_id == 'ai':
-                battle['turn'] = 'ai'
-            else:
-                battle['turn'] = opponent_id
+            # Switch turn to AI
+            battle['turn'] = 'ai'
             
             emit('battle_update', {
                 'hp_updates': [
                     {'player': user_id, 'hp': player['hp'], 'max_hp': player['max_hp']},
-                    {'player': opponent_id, 'hp': opponent['hp'], 'max_hp': opponent['max_hp']}
+                    {'player': 'ai', 'hp': opponent['hp'], 'max_hp': opponent['max_hp']}
                 ],
                 'log': log_entry,
                 'next_turn': battle['turn'],
                 'current_pokemon': {
                     user_id: player['current_pokemon'],
-                    opponent_id: opponent['current_pokemon']
+                    'ai': opponent['current_pokemon']
                 }
             }, room=room)
             
-            # If it's AI's turn, make AI move
-            if opponent_id == 'ai' and battle['turn'] == 'ai':
-                socketio.sleep(1)
-                make_ai_move(room)
+            # Make AI move after delay
+            socketio.sleep(1)
+            make_ai_move(room)
+        else:
+            emit('error', {'message': 'Cannot switch to that Pokemon!'}, room=room)
 
 def make_ai_move(room):
-    """Helper function for AI moves"""
+    """AI move for PvE battles"""
     if room not in active_battles:
         return
     
@@ -589,14 +575,14 @@ def make_ai_move(room):
     player_id = [p for p in battle['players'] if p != 'ai'][0]
     player = battle['players'][player_id]
     
-    # Simple AI: always attack
+    # AI always attacks
     current_ai_pokemon = ai['pokemon'][ai['current_pokemon']]
     target_pokemon = player['pokemon'][player['current_pokemon']]
     
     # Calculate damage
     attack = current_ai_pokemon.get('attack', 50)
     defense = target_pokemon.get('defense', 50)
-    damage = max(1, attack - defense // 2 + random.randint(-5, 5))
+    damage = max(3, attack - defense // 2 + random.randint(-5, 15))
     
     player['hp'][player['current_pokemon']] -= damage
     if player['hp'][player['current_pokemon']] < 0:
@@ -606,26 +592,39 @@ def make_ai_move(room):
     battle['battle_log'].append(log_entry)
     print(log_entry)
     
-    # Check if player's Pokemon fainted
+    # Check if player's current Pokemon fainted
     if player['hp'][player['current_pokemon']] <= 0:
         log_entry += f" - {target_pokemon['name']} fainted!"
         battle['battle_log'].append(f"{target_pokemon['name']} fainted!")
         print(f"{target_pokemon['name']} fainted!")
         
-        if player['current_pokemon'] < len(player['pokemon']) - 1:
-            player['current_pokemon'] += 1
-            new_pokemon = player['pokemon'][player['current_pokemon']]
-            battle['battle_log'].append(f"Player sent out {new_pokemon['name']}!")
-            print(f"Player switched to {new_pokemon['name']}")
+        # Check if player has any Pokemon left that are not fainted
+        remaining_pokemon = [hp for hp in player['hp'] if hp > 0]
+        
+        if len(remaining_pokemon) > 0:
+            # Find the next Pokemon with HP > 0
+            next_index = -1
+            for i in range(len(player['hp'])):
+                if player['hp'][i] > 0:
+                    next_index = i
+                    break
+            
+            if next_index != -1:
+                player['current_pokemon'] = next_index
+                new_pokemon = player['pokemon'][player['current_pokemon']]
+                battle['battle_log'].append(f"You sent out {new_pokemon['name']}!")
+                print(f"Player switched to {new_pokemon['name']}")
+            else:
+                battle['battle_log'].append("No Pokemon left to send out!")
         else:
-            # Battle ended - AI wins
-            battle['battle_log'].append("All your Pokemon fainted! You lose!")
+            # All Pokemon have fainted - Player loses
+            battle['battle_log'].append("All your Pokemon have fainted! You lose!")
             print("Battle ended, AI wins")
             
             # Update user stats
             user = User.query.get(player_id)
             user.losses += 1
-            user.coins += 20  # Consolation prize
+            user.coins += 20
             db.session.commit()
             
             emit('battle_ended', {
@@ -652,18 +651,6 @@ def make_ai_move(room):
         }
     }, room=room)
 
-@socketio.on('battle_chat')
-def handle_battle_chat(data):
-    room = data['room']
-    message = data['message']
-    username = data['username']
-    
-    emit('chat_message', {
-        'username': username,
-        'message': message,
-        'timestamp': datetime.utcnow().isoformat()
-    }, room=room)
-
 @socketio.on('leave_battle')
 def handle_leave_battle(data):
     room = data['room']
@@ -678,6 +665,68 @@ def handle_leave_battle(data):
         # Clean up room if empty
         if len(active_battles[room]['players']) <= 1:
             del active_battles[room]
+
+@app.route('/api/admin/fetch-gen1', methods=['POST'])
+@token_required
+def fetch_gen1_pokemon(current_user):
+    # Only allow admin (you can skip this check for development)
+    # For now, allow any authenticated user
+    
+    try:
+        # Fetch Gen 1 Pokemon (1-151)
+        added_pokemon = fetch_pokemon_by_generation(1, 151)
+        
+        return jsonify({
+            'message': f'Successfully fetched {len(added_pokemon)} Pokemon from Gen 1',
+            'count': len(added_pokemon)
+        })
+    except Exception as e:
+        return jsonify({'message': f'Error: {str(e)}'}), 500
+
+# Admin endpoint to fetch specific Pokemon by name
+@app.route('/api/admin/fetch-pokemon', methods=['POST'])
+@token_required
+def fetch_specific_pokemon(current_user):
+    data = request.json
+    pokemon_name = data.get('name')
+    
+    if not pokemon_name:
+        return jsonify({'message': 'Pokemon name required'}), 400
+    
+    try:
+        pokemon_data = get_pokemon_from_api(pokemon_name.lower())
+        
+        if not pokemon_data:
+            return jsonify({'message': f'Pokemon {pokemon_name} not found'}), 404
+        
+        pokemon = add_pokemon_to_database(pokemon_data)
+        
+        return jsonify({
+            'message': f'Successfully added {pokemon.name}',
+            'pokemon': {
+                'id': pokemon.id,
+                'name': pokemon.name,
+                'rarity': pokemon.rarity
+            }
+        })
+    except Exception as e:
+        return jsonify({'message': f'Error: {str(e)}'}), 500
+
+# Get all Pokemon in database (for debugging)
+@app.route('/api/admin/pokemon-list', methods=['GET'])
+@token_required
+def get_all_pokemon(current_user):
+    pokemon_list = Pokemon.query.all()
+    
+    return jsonify({
+        'count': len(pokemon_list),
+        'pokemon': [{
+            'id': p.id,
+            'name': p.name,
+            'rarity': p.rarity,
+            'type': p.type
+        } for p in pokemon_list]
+    })
 
 if __name__ == '__main__':
     socketio.run(app, debug=True, port=5000)
