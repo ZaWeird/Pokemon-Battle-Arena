@@ -13,6 +13,8 @@ venv\Scripts\Activate.ps1
 
 pip install -r requirements.txt
 
+----------------RUN BACKEND:------------------
+
 python app.py
 
 --------------------FRONTEND:------------------
@@ -21,6 +23,6 @@ cd frontend
 
 npm install
 
+----------------RUN FRONTEND:------------------
+
 npm run dev
-
-
