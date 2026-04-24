@@ -360,142 +360,168 @@ function Battle({ user, setUser }) {
         </div>
       )}
 
-      <div className="battle-field">
+      {/* RSE-style battle field layout */}
+      <div className="battle-field-rse">
         {/* Opponent side */}
-        <div className="battle-opponent">
-          <h3>AI Opponent</h3>
-          {currentOpponentPokemon ? (
-            <div className="pokemon-battle-card">
-              <div className="pokemon-name-section">
-                <div className="name-row">
-                  <span className="pokemon-name">{currentOpponentPokemon.name}</span>
-                  <span className="pokemon-level">Lv.{currentOpponentPokemon.level || 50}</span>
-                </div>
-                {renderTypeIconsWithText(currentOpponentPokemon.type)}
-                {currentOpponentPokemon.status && (
-                  <span className="status-icon" title={currentOpponentPokemon.status}>
-                    {getStatusIcon(currentOpponentPokemon.status)}
-                    <span className="status-text">{getStatusText(currentOpponentPokemon.status)}</span>
-                  </span>
-                )}
-              </div>
-              <div className="hp-bar-container">
-                <div className="hp-bar">
-                  <div className="hp-fill" style={{ width: `${Math.max(0, opponentHpPercent)}%`, backgroundColor: getHpBarColor(opponentHpPercent) }} />
-                </div>
-                <div className="hp-numbers">{battle.opponent.hp[battle.opponentCurrentPokemon] || 0} / {battle.opponent.max_hp[battle.opponentCurrentPokemon] || currentOpponentPokemon.hp || 0}</div>
-              </div>
-              <div className="speed-display">Speed: {currentOpponentPokemon.speed || 0}</div>
-              <img src={currentOpponentPokemon.image_url || 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png'} alt={currentOpponentPokemon.name} className={animating ? 'shake' : ''} />
-            </div>
-          ) : <p>Loading Opponent...</p>}
-          <div className="opponent-team-list">
-            <h4>Opponent's Team:</h4>
-            <div className="team-mini-list">
-              {battle.opponent.pokemon.map((p, idx) => (
-                <div key={idx} className={`team-mini-item ${idx === battle.opponentCurrentPokemon ? 'active' : ''} ${battle.opponent.hp[idx] <= 0 ? 'fainted' : ''}`}>
-                  <img src={p.image_url} alt={p.name} />
-                  <span>{p.name}</span>
-                  <div className="mini-hp-bar">
-                    <div
-                      className="mini-hp-fill"
-                      style={{
-                        width: `${(battle.opponent.hp[idx] / p.hp) * 100}%`,
-                        backgroundColor: getHpBarColor((battle.opponent.hp[idx] / p.hp) * 100)
-                      }}
-                    />
+        {/* Opponent side */}
+        <div className="battle-opponent-rse">
+          <div className="opponent-row">
+            {/* Left: Info box */}
+            <div className="opponent-info-box pixel-box">
+              {currentOpponentPokemon ? (
+                <>
+                  <div className="name-row">
+                    <span className="pokemon-name">{currentOpponentPokemon.name}</span>
+                    <span className="pokemon-level">Lv.{currentOpponentPokemon.level || 50}</span>
+                    {currentOpponentPokemon.status && (
+                      <span className="status-icon" title={currentOpponentPokemon.status}>
+                        {getStatusIcon(currentOpponentPokemon.status)}
+                        <span className="status-text">{getStatusText(currentOpponentPokemon.status)}</span>
+                      </span>
+                    )}
                   </div>
-                  <span className="mini-hp">{battle.opponent.hp[idx]}/{p.hp}</span>
+                  {renderTypeIconsWithText(currentOpponentPokemon.type)}
+                  <div className="hp-bar-container">
+                    <div className="hp-bar">
+                      <div className="hp-fill" style={{ width: `${Math.max(0, opponentHpPercent)}%`, backgroundColor: getHpBarColor(opponentHpPercent) }} />
+                    </div>
+                    <div className="hp-numbers">{battle.opponent.hp[battle.opponentCurrentPokemon] || 0} / {battle.opponent.max_hp[battle.opponentCurrentPokemon] || currentOpponentPokemon.hp || 0}</div>
+                  </div>
+                  <div className="speed-display">Speed: {currentOpponentPokemon.speed || 0}</div>
+                </>
+              ) : <p>Loading Opponent...</p>}
+            </div>
+
+            {/* Right: Team list and sprite stacked */}
+            <div className="opponent-right-group">
+              <div className="opponent-team-list pixel-box">
+                <p>Opponent Pokemon's Team:</p>
+                <div className="team-mini-list">
+                  {battle.opponent.pokemon.map((p, idx) => (
+                    <div key={idx} className={`team-mini-item ${idx === battle.opponentCurrentPokemon ? 'active' : ''} ${battle.opponent.hp[idx] <= 0 ? 'fainted' : ''}`}>
+                      <img src={p.image_url} alt={p.name} />
+                      <div className="mini-hp-bar">
+                        <div
+                          className="mini-hp-fill"
+                          style={{
+                            width: `${(battle.opponent.hp[idx] / p.hp) * 100}%`,
+                            backgroundColor: getHpBarColor((battle.opponent.hp[idx] / p.hp) * 100)
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
+              <div className="opponent-sprite-container">
+                {currentOpponentPokemon ? (
+                  <img src={currentOpponentPokemon.image_url || 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png'} alt={currentOpponentPokemon.name} className={animating ? 'shake' : ''} />
+                ) : <p>Loading...</p>}
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="battle-vs">
+        {/* VS and turn indicator */}
+        <div className="battle-vs-rse">
           <h2>VS</h2>
           {battle.turn === user.id ? <p className="your-turn">Your Turn!</p> : <p className="opponent-turn">AI Thinking...</p>}
         </div>
 
         {/* Player side */}
-        <div className="battle-player">
-          <h3>{user.username}</h3>
-          {currentPlayerPokemon ? (
-            <div className="pokemon-battle-card">
-              <div className="pokemon-name-section">
-                <div className="name-row">
-                  <span className="pokemon-name">{currentPlayerPokemon.name}</span>
-                  <span className="pokemon-level">Lv.{currentPlayerPokemon.level || 1}</span>
-                </div>
-                {renderTypeIconsWithText(currentPlayerPokemon.type)}
-                {currentPlayerPokemon.status && (
-                  <span className="status-icon" title={currentPlayerPokemon.status}>
-                    {getStatusIcon(currentPlayerPokemon.status)}
-                    <span className="status-text">{getStatusText(currentPlayerPokemon.status)}</span>
-                  </span>
-                )}
+        <div className="battle-player-rse">
+          <div className="player-row">
+            {/* Left: Sprite and team list stacked */}
+            <div className="player-left-group">
+              <div className="player-sprite-container">
+                {currentPlayerPokemon ? (
+                  <img src={currentPlayerPokemon.image_url || 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png'} alt={currentPlayerPokemon.name} className={animating ? 'shake' : ''} />
+                ) : <p>No Pokemon</p>}
               </div>
-              <div className="hp-bar-container">
-                <div className="hp-bar">
-                  <div className="hp-fill" style={{ width: `${Math.max(0, playerHpPercent)}%`, backgroundColor: getHpBarColor(playerHpPercent) }} />
+              <div className="player-team-list pixel-box">
+                <p>Your Team:</p>
+                <div className="team-mini-list">
+                  {battle.player.pokemon.map((p, idx) => (
+                    <div key={idx} className={`team-mini-item ${idx === battle.currentPokemon ? 'active' : ''} ${battle.player.hp[idx] <= 0 ? 'fainted' : ''}`} onClick={() => handleSwitch(idx)}>
+                      <img src={p.image_url} alt={p.name} />
+                      <div className="mini-hp-bar">
+                        <div
+                          className="mini-hp-fill"
+                          style={{
+                            width: `${(battle.player.hp[idx] / p.hp) * 100}%`,
+                            backgroundColor: getHpBarColor((battle.player.hp[idx] / p.hp) * 100)
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div className="hp-numbers">{battle.player.hp[battle.currentPokemon] || 0} / {battle.player.max_hp[battle.currentPokemon] || currentPlayerPokemon.hp || 0}</div>
               </div>
-              <div className="speed-display">Speed: {currentPlayerPokemon.speed || 0}</div>
-              <img src={currentPlayerPokemon.image_url || 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png'} alt={currentPlayerPokemon.name} className={animating ? 'shake' : ''} />
             </div>
-          ) : <p>No Pokemon available</p>}
-          <div className="player-team-list">
-            <h4>Your Team:</h4>
-            <div className="team-mini-list">
-              {battle.player.pokemon.map((p, idx) => (
-                <div key={idx} className={`team-mini-item ${idx === battle.currentPokemon ? 'active' : ''} ${battle.player.hp[idx] <= 0 ? 'fainted' : ''}`} onClick={() => handleSwitch(idx)}>
-                  <img src={p.image_url} alt={p.name} />
-                  <span>{p.name}</span>
-                  <div className="mini-hp-bar">
-                    <div
-                      className="mini-hp-fill"
-                      style={{
-                        width: `${(battle.player.hp[idx] / p.hp) * 100}%`,
-                        backgroundColor: getHpBarColor((battle.player.hp[idx] / p.hp) * 100)
-                      }}
-                    />
+
+            {/* Right: Info box */}
+            <div className="player-info-box pixel-box">
+              {currentPlayerPokemon ? (
+                <>
+                  <div className="name-row">
+                    <span className="pokemon-name">{currentPlayerPokemon.name}</span>
+                    <span className="pokemon-level">Lv.{currentPlayerPokemon.level || 1}</span>
+                    {currentPlayerPokemon.status && (
+                      <span className="status-icon" title={currentPlayerPokemon.status}>
+                        {getStatusIcon(currentPlayerPokemon.status)}
+                        <span className="status-text">{getStatusText(currentPlayerPokemon.status)}</span>
+                      </span>
+                    )}
                   </div>
-                  <span className="mini-hp">{battle.player.hp[idx]}/{p.hp}</span>
-                </div>
+                  {renderTypeIconsWithText(currentPlayerPokemon.type)}
+                  <div className="hp-bar-container">
+                    <div className="hp-bar">
+                      <div className="hp-fill" style={{ width: `${Math.max(0, playerHpPercent)}%`, backgroundColor: getHpBarColor(playerHpPercent) }} />
+                    </div>
+                    <div className="hp-numbers">{battle.player.hp[battle.currentPokemon] || 0} / {battle.player.max_hp[battle.currentPokemon] || currentPlayerPokemon.hp || 0}</div>
+                  </div>
+                  <div className="speed-display">Speed: {currentPlayerPokemon.speed || 0}</div>
+                </>
+              ) : <p>No Pokemon available</p>}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Row: Battle Log and Move Selection */}
+      <div className="battle-bottom-row">
+        <div className="battle-log pixel-box">
+          <h4>Battle Log</h4>
+          <div className="log-messages">
+            {battle.battleLog.map((log, idx) => <p key={idx}>{log}</p>)}
+          </div>
+        </div>
+
+        {battle.turn === user.id && currentPlayerPokemon && battle.player.hp[battle.currentPokemon] > 0 && !showMoveInfo && (
+          <div className="move-selection pixel-box">
+            <div className="moves-grid">
+              {battle.playerMoves.map((move, idx) => (
+                <button key={idx} className={`move-button move-type-${move.type}`} onClick={() => handleMoveSelect(move, idx)}>
+                  <div className="move-name">{move.name}</div>
+                  <div className="move-details">
+                    <span className="move-type">{move.type}</span>
+                    {move.power > 0 && <span className="move-power">Power: {move.power}</span>}
+                  </div>
+                </button>
               ))}
             </div>
           </div>
-        </div>
-      </div>
+        )}
 
-      <div className="battle-log">
-        <h4>Battle Log</h4>
-        <div className="log-messages">
-          {battle.battleLog.map((log, idx) => <p key={idx}>{log}</p>)}
-        </div>
-      </div>
-
-      {battle.turn === user.id && currentPlayerPokemon && battle.player.hp[battle.currentPokemon] > 0 && !showMoveInfo && (
-        <div className="move-selection">
-          <div className="moves-grid">
-            {battle.playerMoves.map((move, idx) => (
-              <button key={idx} className={`move-button move-type-${move.type}`} onClick={() => handleMoveSelect(move, idx)}>
-                <div className="move-name">{move.name}</div>
-                <div className="move-details">
-                  <span className="move-type">{move.type}</span>
-                  <span className="move-pp">PP: {move.pp}</span>
-                  {move.power > 0 && <span className="move-power">Power: {move.power}</span>}
-                </div>
-              </button>
-            ))}
+        {battle.turn !== user.id && currentPlayerPokemon && battle.player.hp[battle.currentPokemon] > 0 && (
+          <div className="move-selection pixel-box turn-waiting">
+            <div className="thinking-text">Opponent is thinking...</div>
           </div>
-          <button className="switch-button" onClick={() => toast("Click on a Pokemon in your team to switch")}>Switch Pokemon</button>
-        </div>
-      )}
+        )}
+      </div>
 
       {battle.turn !== user.id && currentPlayerPokemon && battle.player.hp[battle.currentPokemon] > 0 && (
-        <div className="turn-indicator">
+        <div className="turn-indicator pixel-box">
           <div className="thinking-text">Opponent is thinking...</div>
         </div>
       )}

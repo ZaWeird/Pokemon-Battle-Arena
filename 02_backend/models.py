@@ -18,7 +18,6 @@ class User(Base):
     wins = Column(Integer, default=0)
     losses = Column(Integer, default=0)
     rank = Column(String(20), default='Bronze')
-    rating = Column(Integer, default=1000)
     created_at = Column(DateTime, default=datetime.utcnow)
     
     # Relationship to UserPokemon

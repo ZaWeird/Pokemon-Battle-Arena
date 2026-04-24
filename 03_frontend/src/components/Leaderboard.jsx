@@ -35,26 +35,29 @@ function Leaderboard() {
   return (
     <div className="leaderboard">
       <div className="card">
-        <h2 className="card-title">Ranked Leaderboard</h2>
+        <h2 className="card-title">Trainer Rankings</h2>
         
-        <div className="leaderboard-table">
-          <div className="leaderboard-header">
+        <div className="leaderboard-table pixel-table">
+          <div className="leaderboard-header pixel-header">
             <div>Rank</div>
-            <div>Player</div>
-            <div>Rating</div>
+            <div>Trainer</div>
             <div>Wins</div>
             <div>Losses</div>
             <div>Win Rate</div>
+            <div>Pokémon</div>
           </div>
           
           {players.map(player => (
-            <div key={player.rank} className={`leaderboard-row ${getRankClass(player.rank)}`}>
+            <div 
+              key={player.rank} 
+              className={`leaderboard-row pixel-row ${getRankClass(player.rank)}`}
+            >
               <div className="rank">#{player.rank}</div>
               <div className="player-name">{player.username}</div>
-              <div className="rating">{player.rating}</div>
               <div className="wins">{player.wins}</div>
               <div className="losses">{player.losses}</div>
               <div className="win-rate">{player.win_rate}%</div>
+              <div className="pokemon-count">{player.pokemon_count}</div>
             </div>
           ))}
         </div>

@@ -8,7 +8,6 @@ CREATE TABLE IF NOT EXISTS users (
     wins INTEGER DEFAULT 0,
     losses INTEGER DEFAULT 0,
     rank TEXT DEFAULT 'Bronze',
-    rating INTEGER DEFAULT 1000,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

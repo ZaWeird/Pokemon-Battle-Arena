@@ -47,7 +47,10 @@ function AppContent() {
       
       {user && !isBattlePage && (
         <nav className="navbar">
-          <div className="nav-brand">Pokemon Battle Arena</div>
+          <div className="nav-brand">
+            {/* Logo image will go here */}
+            <span style={{ visibility: 'hidden' }}>POKEMON BATTLE ARENA</span>
+          </div>
           <div className="nav-menu">
             <a href="/lobby">Lobby</a>
             <a href="/gacha">Gacha</a>

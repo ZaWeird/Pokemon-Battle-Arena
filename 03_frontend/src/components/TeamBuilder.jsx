@@ -25,12 +25,15 @@ const TYPE_ICONS = {
   fairy: `${TYPE_ICON_BASE}/fairy.svg`,
 };
 
+const ITEMS_PER_PAGE = 60;
+
 function TeamBuilder({ user }) {
   const [pokemons, setPokemons] = useState([]);
   const [team, setTeam] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     fetchInventory();
@@ -105,7 +108,7 @@ function TeamBuilder({ user }) {
                 alt={type}
                 title={type}
                 className="type-icon"
-                style={{ width: '20px', height: '20px', marginRight: '4px' }}
+                style={{ width: '16px', height: '16px', marginRight: '2px' }}
                 onError={(e) => { e.target.style.display = 'none'; }}
               />
               <span className="type-name">{type}</span>
@@ -126,6 +129,26 @@ function TeamBuilder({ user }) {
     }
     return true;
   });
+
+  // Pagination logic
+  const totalPages = Math.ceil(availablePokemons.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedPokemons = availablePokemons.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  const goToPage = (page) => {
+    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+  };
+
+  // Reset page when filters change
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+    setCurrentPage(1);
+  };
+
+  const handleTypeChange = (e) => {
+    setSelectedType(e.target.value);
+    setCurrentPage(1);
+  };
 
   if (loading) {
     return <div className="loading">Loading...</div>;
@@ -163,7 +186,7 @@ function TeamBuilder({ user }) {
           )}
         </div>
 
-        {/* Available Pokémon with Search and Type Filter */}
+        {/* Available Pokémon */}
         <div className="available-pokemon">
           <h3>Available Pokémon</h3>
           <div className="search-filter-bar">
@@ -171,61 +194,99 @@ function TeamBuilder({ user }) {
               type="text"
               placeholder="Search by name..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={handleSearchChange}
               className="search-input"
             />
             <select
               value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
+              onChange={handleTypeChange}
               className="type-filter"
             >
               <option value="all">All Types</option>
-              <option value="normal">Normal</option>
-              <option value="fire">Fire</option>
-              <option value="water">Water</option>
-              <option value="electric">Electric</option>
-              <option value="grass">Grass</option>
-              <option value="ice">Ice</option>
-              <option value="fighting">Fighting</option>
-              <option value="poison">Poison</option>
-              <option value="ground">Ground</option>
-              <option value="flying">Flying</option>
-              <option value="psychic">Psychic</option>
-              <option value="bug">Bug</option>
-              <option value="rock">Rock</option>
-              <option value="ghost">Ghost</option>
-              <option value="dragon">Dragon</option>
-              <option value="dark">Dark</option>
-              <option value="steel">Steel</option>
-              <option value="fairy">Fairy</option>
+              {Object.keys(TYPE_ICONS).map(type => (
+                <option key={type} value={type}>{type.charAt(0).toUpperCase() + type.slice(1)}</option>
+              ))}
             </select>
           </div>
           <div className="inventory-stats">
             <p>Showing: {availablePokemons.length} Pokémon</p>
           </div>
-          <div className="grid">
-            {availablePokemons.map(pokemon => (
-              <div key={pokemon.id} className="pokemon-card" onClick={() => addToTeam(pokemon)}>
-                <img src={pokemon.image_url} alt={pokemon.name} className="pokemon-image" />
-                <div className="pokemon-info">
-                  <h4 className="pokemon-name">{pokemon.name}</h4>
-                  <div className="rarity-and-types">
-                    <span className={`pokemon-rarity ${getRarityClass(pokemon.rarity)}`}>
-                      {pokemon.rarity}
-                    </span>
-                    {renderTypesWithIcons(pokemon.type)}
+
+          {paginatedPokemons.length === 0 ? (
+            <p className="empty-message">No available Pokémon match your criteria.</p>
+          ) : (
+            <>
+              <div className="inventory-grid">
+                {paginatedPokemons.map(pokemon => (
+                  <div 
+                    key={pokemon.id} 
+                    className={`pokemon-card inventory-card bg-${pokemon.rarity.toLowerCase()}`}
+                    onClick={() => addToTeam(pokemon)}
+                  >
+                    <div className="inventory-card-content">
+                      <div className="inventory-image-wrapper">
+                        <img src={pokemon.image_url} alt={pokemon.name} className="pokemon-image" />
+                      </div>
+                      <div className="inventory-details">
+                        <h4 className="pokemon-name">{pokemon.name}</h4>
+                        <div className="rarity-and-types-compact">
+                          <span className={`pokemon-rarity ${getRarityClass(pokemon.rarity)}`}>
+                            {pokemon.rarity}
+                          </span>
+                          {renderTypesWithIcons(pokemon.type)}
+                        </div>
+                        <div className="pokemon-stats-grid">
+                          <div className="stat-item">Lv. {pokemon.level}</div>
+                          <div className="stat-item">XP: {pokemon.xp}</div>
+                          <div className="stat-item">HP: {pokemon.hp}</div>
+                          <div className="stat-item">ATK: {pokemon.attack}</div>
+                          <div className="stat-item">DEF: {pokemon.defense}</div>
+                          <div className="stat-item">SPD: {pokemon.speed}</div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="pokemon-stats">
-                    <p>Level: {pokemon.level}</p>
-                    <p>HP: {pokemon.hp}</p>
-                    <p>ATK: {pokemon.attack}</p>
-                    <p>DEF: {pokemon.defense}</p>
-                    <p>SPD: {pokemon.speed}</p>
-                  </div>
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="pagination">
+                  <button 
+                    className="pagination-btn" 
+                    onClick={() => goToPage(1)}
+                    disabled={currentPage === 1}
+                  >
+                    «
+                  </button>
+                  <button 
+                    className="pagination-btn" 
+                    onClick={() => goToPage(currentPage - 1)}
+                    disabled={currentPage === 1}
+                  >
+                    ‹
+                  </button>
+                  <span className="pagination-info">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <button 
+                    className="pagination-btn" 
+                    onClick={() => goToPage(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                  >
+                    ›
+                  </button>
+                  <button 
+                    className="pagination-btn" 
+                    onClick={() => goToPage(totalPages)}
+                    disabled={currentPage === totalPages}
+                  >
+                    »
+                  </button>
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
     </div>

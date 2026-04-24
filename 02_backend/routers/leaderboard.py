@@ -18,10 +18,16 @@ def get_leaderboard():
     cursor = conn.cursor()
     
     cursor.execute("""
-        SELECT username, rating, wins, losses,
-               ROUND(CAST(wins AS FLOAT) / NULLIF(wins + losses, 0) * 100, 1) as win_rate
-        FROM users
-        ORDER BY rating DESC
+        SELECT 
+            u.username, 
+            u.wins, 
+            u.losses,
+            ROUND(CAST(u.wins AS FLOAT) / NULLIF(u.wins + u.losses, 0) * 100, 1) as win_rate,
+            COUNT(up.id) as pokemon_count
+        FROM users u
+        LEFT JOIN user_pokemons up ON u.id = up.user_id
+        GROUP BY u.id
+        ORDER BY u.wins DESC, u.losses ASC
         LIMIT 50
     """)
     
@@ -33,10 +39,10 @@ def get_leaderboard():
         leaderboard.append({
             'rank': i,
             'username': row['username'],
-            'rating': row['rating'],
             'wins': row['wins'],
             'losses': row['losses'],
-            'win_rate': row['win_rate'] if row['win_rate'] else 0
+            'win_rate': row['win_rate'] if row['win_rate'] else 0,
+            'pokemon_count': row['pokemon_count']
         })
     
     return jsonify(leaderboard)

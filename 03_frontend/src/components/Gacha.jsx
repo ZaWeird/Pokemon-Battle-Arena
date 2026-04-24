@@ -29,6 +29,7 @@ function Gacha({ user, setUser }) {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState([]);
   const [showResults, setShowResults] = useState(false);
+  const [revealed, setRevealed] = useState([]); // track opened cards
 
   const refreshUserData = async () => {
     try {
@@ -63,6 +64,7 @@ function Gacha({ user, setUser }) {
         { headers: { Authorization: localStorage.getItem('token') } }
       );
       setResults(response.data.results);
+      setRevealed(new Array(response.data.results.length).fill(false)); // all hidden initially
       setShowResults(true);
       await refreshUserData();
       toast.success(`Summoned ${response.data.results.length} Pokemon!`);
@@ -73,12 +75,28 @@ function Gacha({ user, setUser }) {
     }
   };
 
+  const handleReveal = (index) => {
+    const newRevealed = [...revealed];
+    newRevealed[index] = true;
+    setRevealed(newRevealed);
+  };
+
   const getRarityClass = (rarity) => {
     switch(rarity) {
       case 'Common': return 'rarity-Common';
       case 'Rare': return 'rarity-Rare';
       case 'Epic': return 'rarity-Epic';
       case 'Legendary': return 'rarity-Legendary';
+      default: return '';
+    }
+  };
+
+  const getRarityBgClass = (rarity) => {
+    switch(rarity) {
+      case 'Common': return 'bg-common';
+      case 'Rare': return 'bg-rare';
+      case 'Epic': return 'bg-epic';
+      case 'Legendary': return 'bg-legendary';
       default: return '';
     }
   };
@@ -113,7 +131,7 @@ function Gacha({ user, setUser }) {
   return (
     <div className="gacha-container">
       <div className="card">
-        <h2 className="card-title">Pokemon Gacha</h2>
+        <h2 className="card-title">Pokémon Gacha</h2>
         
         <div className="gacha-info">
           <p>Your Coins: <strong>{user.coins}</strong></p>
@@ -140,7 +158,7 @@ function Gacha({ user, setUser }) {
 
         {loading && (
           <div className="loading-spinner">
-            <p>Summoning Pokemon...</p>
+            <p>Summoning Pokémon...</p>
           </div>
         )}
 
@@ -149,22 +167,33 @@ function Gacha({ user, setUser }) {
             <h3>Summon Results</h3>
             <div className="grid">
               {results.map((pokemon, index) => (
-                <div key={index} className="pokemon-card gacha-result">
-                  <img 
-                    src={pokemon.image_url} 
-                    alt={pokemon.name}
-                    className="pokemon-image"
-                  />
-                  <div className="pokemon-info">
-                    <h4 className="pokemon-name">{pokemon.name}</h4>
-                    <div className="rarity-and-types">
-                      <span className={`pokemon-rarity ${getRarityClass(pokemon.rarity)}`}>
-                        {pokemon.rarity}
-                      </span>
-                      {renderTypesWithIcons(pokemon.type)}
+                <div 
+                  key={index} 
+                  className={`pokemon-card gacha-result ${!revealed[index] ? 'gacha-card-hidden' : ''} ${getRarityBgClass(pokemon.rarity)}`}
+                  onClick={() => !revealed[index] && handleReveal(index)}
+                >
+                  {!revealed[index] ? (
+                    <div className="gacha-cover">
+                      <span className="cover-text">Click to open</span>
                     </div>
-                    {/* No stats - intentionally omitted */}
-                  </div>
+                  ) : (
+                    <>
+                      <img 
+                        src={pokemon.image_url} 
+                        alt={pokemon.name}
+                        className="pokemon-image"
+                      />
+                      <div className="pokemon-info">
+                        <h4 className="pokemon-name">{pokemon.name}</h4>
+                        <div className="rarity-and-types">
+                          <span className={`pokemon-rarity ${getRarityClass(pokemon.rarity)}`}>
+                            {pokemon.rarity}
+                          </span>
+                          {renderTypesWithIcons(pokemon.type)}
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               ))}
             </div>
