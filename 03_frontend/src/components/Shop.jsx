@@ -31,7 +31,6 @@ function Shop({ user, setUser }) {
                 headers: { Authorization: localStorage.getItem('token') }
             });
             toast.success(res.data.message);
-            // Refresh user data
             const profileRes = await axios.get('/api/profile', {
                 headers: { Authorization: localStorage.getItem('token') }
             });
@@ -43,21 +42,45 @@ function Shop({ user, setUser }) {
         }
     };
 
+    // Determine rarity class based on item size/name/exp_value
+    const getItemRarityClass = (item) => {
+        const name = item.name.toLowerCase();
+        if (name.includes('large') || item.exp_value > 150) return 'bg-legendary';
+        if (name.includes('medium') || item.exp_value > 50) return 'bg-epic';
+        return 'bg-rare'; // small or default
+    };
+
     return (
         <div className="shop-container">
-            <h2>Item Shop</h2>
-            <div className="items-grid">
-                {items.map(item => (
-                    <div key={item.id} className="item-card">
-                        <h3>{item.name}</h3>
-                        <p>{item.description}</p>
-                        <p>EXP: +{item.exp_value}</p>
-                        <p>Price: {item.price} coins</p>
-                        <button onClick={() => buyItem(item.id, item.price)} disabled={loading}>
-                            Buy
-                        </button>
-                    </div>
-                ))}
+            <div className="card">
+                <h2 className="card-title">Item Shop</h2>
+                
+                <div className="shop-info">
+                    <p>Your Coins: <strong>{user.coins}</strong></p>
+                </div>
+
+                <div className="items-grid">
+                    {items.map(item => (
+                        <div 
+                            key={item.id} 
+                            className={`item-card pixel-item-card ${getItemRarityClass(item)}`}
+                        >
+                            <h3>{item.name}</h3>
+                            <p className="item-description">{item.description}</p>
+                            <div className="item-stats">
+                                <p>EXP: <strong>+{item.exp_value}</strong></p>
+                                <p>Price: <strong>{item.price}</strong> coins</p>
+                            </div>
+                            <button 
+                                className="pixel-btn buy-btn"
+                                onClick={() => buyItem(item.id, item.price)} 
+                                disabled={loading || user.coins < item.price}
+                            >
+                                Buy
+                            </button>
+                        </div>
+                    ))}
+                </div>
             </div>
         </div>
     );

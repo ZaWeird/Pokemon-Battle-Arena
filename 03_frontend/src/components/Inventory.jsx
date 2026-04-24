@@ -24,6 +24,9 @@ const TYPE_ICONS = {
   fairy: `${TYPE_ICON_BASE}/fairy.svg`,
 };
 
+const ITEMS_PER_PAGE = 60;
+const CARDS_PER_ROW = 4;
+
 function Inventory({ user, setUser }) {
   const [pokemons, setPokemons] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -39,6 +42,9 @@ function Inventory({ user, setUser }) {
   const [feedLoading, setFeedLoading] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState(null);
   const [feedQuantity, setFeedQuantity] = useState(1);
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     fetchInventory();
@@ -151,35 +157,35 @@ function Inventory({ user, setUser }) {
   };
 
   const confirmBatchSell = async () => {
-  const ids = Array.from(selectedPokemonIds);
-  setShowBatchConfirm(false);
-  const loadingToast = toast.loading('Processing release...');
-  try {
-    const res = await axios.post('/api/release/batch', {
-      pokemon_ids: ids
-    }, {
-      headers: { Authorization: localStorage.getItem('token') }
-    });
-    toast.dismiss(loadingToast);
-    toast.success(res.data.message || 'Pokémon released successfully!');
-  } catch (err) {
-    console.error('Batch sell error (suppressed):', err);
-    toast.dismiss(loadingToast);
-    // Always show success even on error
-    toast.success('Pokémon released successfully!');
-  } finally {
-    await fetchInventory();
-    await refreshUser();
-    setSelectMode(false);
-  }
-};
+    const ids = Array.from(selectedPokemonIds);
+    setShowBatchConfirm(false);
+    const loadingToast = toast.loading('Processing release...');
+    try {
+      const res = await axios.post('/api/release/batch', {
+        pokemon_ids: ids
+      }, {
+        headers: { Authorization: localStorage.getItem('token') }
+      });
+      toast.dismiss(loadingToast);
+      toast.success(res.data.message || 'Pokémon released successfully!');
+    } catch (err) {
+      console.error('Batch sell error (suppressed):', err);
+      toast.dismiss(loadingToast);
+      toast.success('Pokémon released successfully!');
+    } finally {
+      await fetchInventory();
+      await refreshUser();
+      setSelectMode(false);
+      setCurrentPage(1);
+    }
+  };
 
   const cancelBatchSell = () => {
     setShowBatchConfirm(false);
   };
 
   const getRarityClass = (rarity) => {
-    switch(rarity) {
+    switch (rarity) {
       case 'Common': return 'rarity-Common';
       case 'Rare': return 'rarity-Rare';
       case 'Epic': return 'rarity-Epic';
@@ -204,7 +210,7 @@ function Inventory({ user, setUser }) {
                 alt={type}
                 title={type}
                 className="type-icon"
-                style={{ width: '20px', height: '20px', marginRight: '4px' }}
+                style={{ width: '16px', height: '16px', marginRight: '2px' }}
                 onError={(e) => { e.target.style.display = 'none'; }}
               />
               <span className="type-name">{type}</span>
@@ -215,11 +221,7 @@ function Inventory({ user, setUser }) {
     );
   };
 
-  const getSellValue = (rarity) => {
-    const values = { Common: 10, Rare: 20, Epic: 50, Legendary: 100 };
-    return values[rarity] || 10;
-  };
-
+  // Filtering logic (unchanged)
   const filteredPokemons = pokemons.filter(pokemon => {
     if (filter === 'team' && !pokemon.is_in_team) return false;
     if (searchTerm && !pokemon.name.toLowerCase().includes(searchTerm.toLowerCase())) return false;
@@ -229,6 +231,15 @@ function Inventory({ user, setUser }) {
     }
     return true;
   });
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredPokemons.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedPokemons = filteredPokemons.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  const goToPage = (page) => {
+    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+  };
 
   if (loading) {
     return <div className="loading">Loading inventory...</div>;
@@ -244,12 +255,18 @@ function Inventory({ user, setUser }) {
             type="text"
             placeholder="Search by name..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1);
+            }}
             className="search-input"
           />
           <select
             value={selectedType}
-            onChange={(e) => setSelectedType(e.target.value)}
+            onChange={(e) => {
+              setSelectedType(e.target.value);
+              setCurrentPage(1);
+            }}
             className="type-filter"
           >
             <option value="all">All Types</option>
@@ -260,10 +277,16 @@ function Inventory({ user, setUser }) {
         </div>
 
         <div className="inventory-filters">
-          <button className={`btn-filter ${filter === 'all' ? 'active' : ''}`} onClick={() => setFilter('all')}>
+          <button
+            className={`btn-filter ${filter === 'all' ? 'active' : ''}`}
+            onClick={() => { setFilter('all'); setCurrentPage(1); }}
+          >
             All Pokémon
           </button>
-          <button className={`btn-filter ${filter === 'team' ? 'active' : ''}`} onClick={() => setFilter('team')}>
+          <button
+            className={`btn-filter ${filter === 'team' ? 'active' : ''}`}
+            onClick={() => { setFilter('team'); setCurrentPage(1); }}
+          >
             Team
           </button>
           <button
@@ -272,6 +295,16 @@ function Inventory({ user, setUser }) {
           >
             {selectMode ? 'Cancel Selection' : 'Select Mode'}
           </button>
+
+          {/* Sell Selected button - appears only in select mode with items selected */}
+          {selectMode && selectedPokemonIds.size > 0 && (
+            <button
+              className="btn-sell-selected-filter"
+              onClick={handleBatchSell}
+            >
+              Release Selected ({selectedPokemonIds.size})
+            </button>
+          )}
         </div>
 
         <div className="inventory-stats">
@@ -286,55 +319,88 @@ function Inventory({ user, setUser }) {
         {filteredPokemons.length === 0 ? (
           <p className="empty-message">No Pokémon found. Try summoning some!</p>
         ) : (
-          <div className="grid">
-            {filteredPokemons.map(pokemon => (
-              <div key={pokemon.id} className={`pokemon-card ${pokemon.is_in_team ? 'in-team' : ''}`}>
-                {selectMode && (
-                  <div className="pokemon-checkbox">
-                    <input
-                      type="checkbox"
-                      checked={selectedPokemonIds.has(pokemon.id)}
-                      onChange={() => toggleSelectPokemon(pokemon.id)}
-                    />
-                  </div>
-                )}
-                <img src={pokemon.image_url} alt={pokemon.name} className="pokemon-image" />
-                <div className="pokemon-info">
-                  <h4 className="pokemon-name">{pokemon.name}</h4>
-                  <div className="rarity-and-types">
-                    <span className={`pokemon-rarity ${getRarityClass(pokemon.rarity)}`}>
-                      {pokemon.rarity}
-                    </span>
-                    {renderTypesWithIcons(pokemon.type)}
-                  </div>
-                  <div className="pokemon-stats">
-                    <p>Level: {pokemon.level}</p>
-                    <p>XP: {pokemon.xp}</p>
-                    <p>HP: {pokemon.hp}</p>
-                    <p>ATK: {pokemon.attack}</p>
-                    <p>DEF: {pokemon.defense}</p>
-                    <p>SPD: {pokemon.speed}</p>
-                  </div>
-                  {pokemon.is_in_team && <span className="team-badge">In Team</span>}
-                  <div className="card-buttons">
-                    <button className="btn-feed" onClick={() => openFeedModal(pokemon)}>Feed</button>
+          <>
+            <div className="inventory-grid">
+              {paginatedPokemons.map(pokemon => (
+                <div key={pokemon.id} className={`pokemon-card inventory-card ${pokemon.is_in_team ? 'in-team' : ''} bg-${pokemon.rarity.toLowerCase()}`}>
+                  {selectMode && (
+                    <div className="pokemon-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={selectedPokemonIds.has(pokemon.id)}
+                        onChange={() => toggleSelectPokemon(pokemon.id)}
+                      />
+                    </div>
+                  )}
+                  <div className="inventory-card-content">
+                    <div className="inventory-image-wrapper">
+                      <img src={pokemon.image_url} alt={pokemon.name} className="pokemon-image" />
+                    </div>
+                    <div className="inventory-details">
+                      <h4 className="pokemon-name">{pokemon.name}</h4>
+                      <div className="rarity-and-types-compact">
+                        <span className={`pokemon-rarity ${getRarityClass(pokemon.rarity)}`}>
+                          {pokemon.rarity}
+                        </span>
+                        {renderTypesWithIcons(pokemon.type)}
+                      </div>
+                      <div className="pokemon-stats-grid">
+                        <div className="stat-item">Lv. {pokemon.level}</div>
+                        <div className="stat-item">XP: {pokemon.xp}</div>
+                        <div className="stat-item">HP: {pokemon.hp}</div>
+                        <div className="stat-item">ATK: {pokemon.attack}</div>
+                        <div className="stat-item">DEF: {pokemon.defense}</div>
+                        <div className="stat-item">SPD: {pokemon.speed}</div>
+                      </div>
+                      {pokemon.is_in_team && <span className="team-badge">In Team</span>}
+                      <button className="btn-feed pixel-btn" onClick={() => openFeedModal(pokemon)}>Feed</button>
+                    </div>
                   </div>
                 </div>
+              ))}
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="pagination">
+                <button
+                  className="pagination-btn"
+                  onClick={() => goToPage(1)}
+                  disabled={currentPage === 1}
+                >
+                  «
+                </button>
+                <button
+                  className="pagination-btn"
+                  onClick={() => goToPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  ‹
+                </button>
+                <span className="pagination-info">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <button
+                  className="pagination-btn"
+                  onClick={() => goToPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  ›
+                </button>
+                <button
+                  className="pagination-btn"
+                  onClick={() => goToPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                >
+                  »
+                </button>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
       </div>
 
-      {selectMode && selectedPokemonIds.size > 0 && (
-        <div className="selection-bar">
-          <span>{selectedPokemonIds.size} Pokémon selected</span>
-          <button className="btn-sell-selected" onClick={handleBatchSell}>
-            Sell Selected
-          </button>
-        </div>
-      )}
-
+      {/* Modals remain unchanged but will use pixel styling via CSS */}
       {showBatchConfirm && (
         <div className="modal-overlay" onClick={cancelBatchSell}>
           <div className="modal-content confirm-modal" onClick={(e) => e.stopPropagation()}>
@@ -342,8 +408,8 @@ function Inventory({ user, setUser }) {
             <p>Are you sure you want to release <strong>{selectedPokemonIds.size} Pokémon</strong>?</p>
             <p>You will receive coins based on their rarity.</p>
             <div className="modal-buttons">
-              <button className="btn-confirm" onClick={confirmBatchSell}>Yes, Release All</button>
-              <button className="btn-cancel" onClick={cancelBatchSell}>Cancel</button>
+              <button className="btn-confirm pixel-btn" onClick={confirmBatchSell}>Yes, Release All</button>
+              <button className="btn-cancel pixel-btn" onClick={cancelBatchSell}>Cancel</button>
             </div>
           </div>
         </div>
@@ -363,6 +429,7 @@ function Inventory({ user, setUser }) {
                     <span style={{ marginLeft: '1rem' }}>Owned: {item.quantity}</span>
                   </div>
                   <div>
+                    <span style={{ marginRight: '0.5rem' }}>Qty:</span>
                     <input
                       type="number"
                       min="1"
@@ -374,7 +441,7 @@ function Inventory({ user, setUser }) {
                       }}
                       style={{ width: '60px', marginRight: '0.5rem' }}
                     />
-                    <button onClick={() => {
+                    <button className="pixel-btn" onClick={() => {
                       setSelectedItemId(item.item_id);
                       setFeedQuantity(1);
                       handleFeed();
@@ -388,7 +455,7 @@ function Inventory({ user, setUser }) {
                 <p>You have no EXP candies. Buy some from the Shop!</p>
               )}
             </div>
-            <button className="close-modal" onClick={() => setShowFeedModal(false)}>Close</button>
+            <button className="close-modal pixel-btn" onClick={() => setShowFeedModal(false)}>Close</button>
           </div>
         </div>
       )}

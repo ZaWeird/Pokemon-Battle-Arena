@@ -42,7 +42,7 @@ def register():
     
     # Insert user
     cursor.execute("""
-        INSERT INTO users (username, email, password_hash, coins, wins, losses, rank, rating)
+        INSERT INTO users (username, email, password_hash, coins, wins, losses, rank)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     """, (username, email, password_hash, 500, 0, 0, 'Bronze', 1000))
     
@@ -68,7 +68,6 @@ def register():
             'wins': 0,
             'losses': 0,
             'rank': 'Bronze',
-            'rating': 1000
         }
     }), 201
 
@@ -84,7 +83,7 @@ def login():
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    cursor.execute("SELECT id, username, password_hash, coins, wins, losses, rank, rating FROM users WHERE username = ?", (username,))
+    cursor.execute("SELECT id, username, password_hash, coins, wins, losses, rank FROM users WHERE username = ?", (username,))
     user = cursor.fetchone()
     conn.close()
     
@@ -110,7 +109,6 @@ def login():
             'wins': user['wins'],
             'losses': user['losses'],
             'rank': user['rank'],
-            'rating': user['rating']
         }
     })
 
@@ -131,7 +129,7 @@ def get_profile():
     
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT id, username, coins, wins, losses, rank, rating FROM users WHERE id = ?", (user_id,))
+    cursor.execute("SELECT id, username, coins, wins, losses, rank FROM users WHERE id = ?", (user_id,))
     user = cursor.fetchone()
     conn.close()
     
@@ -152,6 +150,5 @@ def get_profile():
         'wins': user['wins'],
         'losses': user['losses'],
         'rank': user['rank'],
-        'rating': user['rating'],
         'pokemon_count': pokemon_count
     })

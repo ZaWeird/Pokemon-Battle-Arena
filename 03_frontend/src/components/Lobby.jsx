@@ -51,7 +51,6 @@ function Lobby({ user, setUser }) {
         <div className="player-info">
           <h3>Welcome, Trainer {user.username}!</h3>
           <p>Rank: {user.rank}</p>
-          <p>Rating: {user.rating}</p>
           <p>Wins: {user.wins} | Losses: {user.losses}</p>
           <p>Coins: {user.coins}</p>
           <p>Pokemon: {user.pokemon_count || 0}</p>
@@ -64,7 +63,7 @@ function Lobby({ user, setUser }) {
             <ul>
               <li>Victory: 50 coins + XP</li>
               <li>Defeat: 20 coins</li>
-              <li>First-time bonus available</li>
+              <li>Always gain exps for your pokemon!</li>
             </ul>
             <button className="btn-primary" onClick={handlePvE} disabled={loading}>
               {loading ? 'Starting Battle...' : 'Start PvE Battle'}
