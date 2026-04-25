@@ -44,12 +44,10 @@ function AppContent() {
   return (
     <div className="app">
       <Toaster position="top-right" />
-      
       {user && !isBattlePage && (
         <nav className="navbar">
           <div className="nav-brand">
-            {/* Logo image will go here */}
-            <span style={{ visibility: 'hidden' }}>POKEMON BATTLE ARENA</span>
+            <img src="/pba.png" alt="Pokémon Battle Arena Logo" className="nav-logo" />
           </div>
           <div className="nav-menu">
             <a href="/lobby">Lobby</a>
@@ -72,7 +70,7 @@ function AppContent() {
           <Route path="/" element={user ? <Navigate to="/lobby" /> : <Auth onLogin={handleLogin} />} />
           <Route path="/lobby" element={user ? <Lobby user={user} setUser={setUser} /> : <Navigate to="/" />} />
           <Route path="/gacha" element={user ? <Gacha user={user} setUser={setUser} /> : <Navigate to="/" />} />
-          <Route path="/inventory" element={user ? <Inventory user={user} setUser={setUser} /> : <Navigate to="/" />} /> 
+          <Route path="/inventory" element={user ? <Inventory user={user} setUser={setUser} /> : <Navigate to="/" />} />
           <Route path="/team" element={user ? <TeamBuilder user={user} /> : <Navigate to="/" />} />
           <Route path="/battle/:roomId" element={user ? <Battle user={user} setUser={setUser} /> : <Navigate to="/" />} />
           <Route path="/shop" element={user ? <Shop user={user} setUser={setUser} /> : <Navigate to="/" />} />

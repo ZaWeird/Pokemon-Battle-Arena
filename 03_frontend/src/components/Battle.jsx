@@ -50,8 +50,15 @@ function Battle({ user, setUser }) {
   });
   const [loading, setLoading] = useState(true);
   const [animating, setAnimating] = useState(false);
-  const [damageNumber, setDamageNumber] = useState(null);
+  const [playerDamage, setPlayerDamage] = useState(null);
+  const [opponentDamage, setOpponentDamage] = useState(null);
+  const [battlePhase, setBattlePhase] = useState('command');
 
+  useEffect(() => {
+    if (battle.turn === user.id) {
+      setBattlePhase('command');
+    }
+  }, [battle.turn, user.id]);
   const getHpBarColor = (percentage) => {
     if (percentage > 50) return '#10b981';
     if (percentage > 20) return '#f59e0b';
@@ -111,8 +118,13 @@ function Battle({ user, setUser }) {
   };
 
   const showDamageNumber = (damage, isPlayer) => {
-    setDamageNumber({ damage, isPlayer });
-    setTimeout(() => setDamageNumber(null), 1000);
+    if (isPlayer) {
+      setPlayerDamage(damage);
+      setTimeout(() => setPlayerDamage(null), 3000);
+    } else {
+      setOpponentDamage(damage);
+      setTimeout(() => setOpponentDamage(null), 3000);
+    }
   };
 
   useEffect(() => {
@@ -307,14 +319,6 @@ function Battle({ user, setUser }) {
 
   return (
     <div className="battle-arena">
-      <button className="quit-button" onClick={() => setShowQuitConfirm(true)}>Quit Battle</button>
-
-      {damageNumber && (
-        <div className={`damage-number ${damageNumber.isPlayer ? 'player-damage' : 'opponent-damage'}`}>
-          -{damageNumber.damage}
-        </div>
-      )}
-
       {showQuitConfirm && (
         <div className="modal-overlay">
           <div className="modal-content confirm-modal">
@@ -362,7 +366,6 @@ function Battle({ user, setUser }) {
 
       {/* RSE-style battle field layout */}
       <div className="battle-field-rse">
-        {/* Opponent side */}
         {/* Opponent side */}
         <div className="battle-opponent-rse">
           <div className="opponent-row">
@@ -415,7 +418,12 @@ function Battle({ user, setUser }) {
               </div>
               <div className="opponent-sprite-container">
                 {currentOpponentPokemon ? (
-                  <img src={currentOpponentPokemon.image_url || 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png'} alt={currentOpponentPokemon.name} className={animating ? 'shake' : ''} />
+                  <>
+                    <img src={currentOpponentPokemon.image_url || 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png'} alt={currentOpponentPokemon.name} className={animating ? 'shake' : ''} />
+                    {opponentDamage !== null && (
+                      <div className="damage-number">-{opponentDamage}</div>
+                    )}
+                  </>
                 ) : <p>Loading...</p>}
               </div>
             </div>
@@ -435,7 +443,12 @@ function Battle({ user, setUser }) {
             <div className="player-left-group">
               <div className="player-sprite-container">
                 {currentPlayerPokemon ? (
-                  <img src={currentPlayerPokemon.image_url || 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png'} alt={currentPlayerPokemon.name} className={animating ? 'shake' : ''} />
+                  <>
+                    <img src={currentPlayerPokemon.image_url || 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png'} alt={currentPlayerPokemon.name} className={animating ? 'shake' : ''} />
+                    {playerDamage !== null && (
+                      <div className="damage-number">-{playerDamage}</div>
+                    )}
+                  </>
                 ) : <p>No Pokemon</p>}
               </div>
               <div className="player-team-list pixel-box">
@@ -488,7 +501,7 @@ function Battle({ user, setUser }) {
         </div>
       </div>
 
-      {/* Bottom Row: Battle Log and Move Selection */}
+      {/* Bottom Row: Battle Log and Action Panel */}
       <div className="battle-bottom-row">
         <div className="battle-log pixel-box">
           <h4>Battle Log</h4>
@@ -497,34 +510,47 @@ function Battle({ user, setUser }) {
           </div>
         </div>
 
+        {/* Player's turn actions */}
         {battle.turn === user.id && currentPlayerPokemon && battle.player.hp[battle.currentPokemon] > 0 && !showMoveInfo && (
-          <div className="move-selection pixel-box">
-            <div className="moves-grid">
-              {battle.playerMoves.map((move, idx) => (
-                <button key={idx} className={`move-button move-type-${move.type}`} onClick={() => handleMoveSelect(move, idx)}>
-                  <div className="move-name">{move.name}</div>
-                  <div className="move-details">
-                    <span className="move-type">{move.type}</span>
-                    {move.power > 0 && <span className="move-power">Power: {move.power}</span>}
-                  </div>
+          <>
+            {battlePhase === 'command' ? (
+              <div className="command-menu pixel-box">
+                <button className="command-btn fight-btn" onClick={() => setBattlePhase('move')}>
+                  Fight
                 </button>
-              ))}
-            </div>
-          </div>
+                <button className="command-btn quit-btn" onClick={() => setShowQuitConfirm(true)}>
+                  Quit
+                </button>
+              </div>
+            ) : (
+              <div className="move-selection pixel-box">
+                <button className="back-to-command-btn" onClick={() => setBattlePhase('command')}>
+                  ← Back
+                </button>
+                <div className="moves-grid">
+                  {battle.playerMoves.map((move, idx) => (
+                    <button key={idx} className={`move-button move-type-${move.type}`} onClick={() => handleMoveSelect(move, idx)}>
+                      <div className="move-name">{move.name}</div>
+                      <div className="move-details">
+                        <span className="move-type">{move.type}</span>
+                        <span className="move-pp">PP: {move.pp}</span>
+                        {move.power > 0 && <span className="move-power">Power: {move.power}</span>}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         )}
 
+        {/* Opponent's turn */}
         {battle.turn !== user.id && currentPlayerPokemon && battle.player.hp[battle.currentPokemon] > 0 && (
           <div className="move-selection pixel-box turn-waiting">
             <div className="thinking-text">Opponent is thinking...</div>
           </div>
         )}
       </div>
-
-      {battle.turn !== user.id && currentPlayerPokemon && battle.player.hp[battle.currentPokemon] > 0 && (
-        <div className="turn-indicator pixel-box">
-          <div className="thinking-text">Opponent is thinking...</div>
-        </div>
-      )}
     </div>
   );
 }
