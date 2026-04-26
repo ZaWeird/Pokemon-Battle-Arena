@@ -43,8 +43,8 @@ def register():
     # Insert user
     cursor.execute("""
         INSERT INTO users (username, email, password_hash, coins, wins, losses, rank)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    """, (username, email, password_hash, 500, 0, 0, 'Bronze', 1000))
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, (username, email, password_hash, 500, 0, 0, 'Bronze'))
     
     user_id = cursor.lastrowid
     conn.commit()

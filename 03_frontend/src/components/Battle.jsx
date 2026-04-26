@@ -311,7 +311,7 @@ function Battle({ user, setUser }) {
         <div className="loading-content">
           <h2>Loading Battle...</h2>
           <div className="loading-spinner"></div>
-          <button onClick={() => navigate('/lobby')} style={{ marginTop: '20px' }}>Cancel</button>
+          <button className="pixel-btn cancel-loading-btn" onClick={() => navigate('/lobby')}>Cancel</button>
         </div>
       </div>
     );

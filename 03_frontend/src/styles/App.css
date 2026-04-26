@@ -34,10 +34,10 @@
 body {
   font-family: var(--font-dialog);
   background-color: var(--bg-dark);
-  background-image: 
-    linear-gradient(0deg, rgba(16,48,16,0.3) 0%, transparent 50%),
-    repeating-linear-gradient(45deg, 
-      #204020 0px, #204020 2px, 
+  background-image:
+    linear-gradient(0deg, rgba(16, 48, 16, 0.3) 0%, transparent 50%),
+    repeating-linear-gradient(45deg,
+      #204020 0px, #204020 2px,
       #183818 2px, #183818 6px);
   min-height: 100vh;
   color: var(--text-dark);
@@ -76,7 +76,7 @@ body {
   justify-content: space-around;
   align-items: center;
   border-bottom: 4px solid var(--window-border-dark);
-  box-shadow: 
+  box-shadow:
     inset 2px 2px 0 #fff,
     inset -2px -2px 0 var(--shadow-color),
     0 4px 0 var(--shadow-color);
@@ -108,8 +108,8 @@ body {
 .nav-logo {
   width: 100%;
   height: 100%;
-  object-fit: contain;    
-  image-rendering: pixelated;   
+  object-fit: contain;
+  image-rendering: pixelated;
   display: block;
 }
 
@@ -128,7 +128,7 @@ body {
   font-size: 0.7rem;
   text-transform: uppercase;
   border: 3px solid var(--window-border-dark);
-  box-shadow: 
+  box-shadow:
     inset 2px 2px 0 #fff,
     inset -2px -2px 0 var(--shadow-color),
     2px 2px 0 var(--shadow-color);
@@ -141,7 +141,7 @@ body {
   background: var(--accent-blue);
   color: white;
   border-color: #184878;
-  box-shadow: 
+  box-shadow:
     inset 2px 2px 0 #80b0e0,
     inset -2px -2px 0 #103050,
     1px 1px 0 var(--shadow-color);
@@ -162,7 +162,7 @@ body {
   background: var(--window-bg);
   padding: 0.5rem 1rem;
   border: 3px solid var(--window-border-dark);
-  box-shadow: 
+  box-shadow:
     inset 2px 2px 0 #fff,
     inset -2px -2px 0 var(--shadow-color);
 }
@@ -171,7 +171,7 @@ body {
   background: var(--accent-gold) !important;
   color: #000 !important;
   border-color: #a07020 !important;
-  box-shadow: 
+  box-shadow:
     inset 2px 2px 0 #ffe080,
     inset -2px -2px 0 #805010 !important;
   font-weight: bold;
@@ -181,7 +181,7 @@ body {
   background: var(--accent-red);
   color: white;
   border: 3px solid #801010;
-  box-shadow: 
+  box-shadow:
     inset 2px 2px 0 #f08070,
     inset -2px -2px 0 #601010,
     2px 2px 0 var(--shadow-color);
@@ -197,7 +197,7 @@ body {
 .btn-logout:hover {
   background: #c03020;
   border-color: #601010;
-  box-shadow: 
+  box-shadow:
     inset 2px 2px 0 #f0a090,
     inset -2px -2px 0 #401010,
     1px 1px 0 var(--shadow-color);
@@ -208,7 +208,7 @@ body {
 .card {
   background: var(--window-bg);
   border: 4px solid var(--window-border-dark);
-  box-shadow: 
+  box-shadow:
     inset 3px 3px 0 #fff,
     inset -3px -3px 0 var(--shadow-color),
     4px 4px 0 var(--shadow-color);
@@ -222,7 +222,7 @@ body {
   font-size: 1.2rem;
   margin-bottom: 1.5rem;
   color: var(--text-dark);
-  text-shadow: 2px 2px 0 rgba(255,255,255,0.5);
+  text-shadow: 2px 2px 0 rgba(255, 255, 255, 0.5);
   border-bottom: 2px solid var(--window-border-dark);
   padding-bottom: 0.5rem;
 }
@@ -230,7 +230,7 @@ body {
 .pokemon-card {
   background: var(--window-bg);
   border: 3px solid var(--window-border-dark);
-  box-shadow: 
+  box-shadow:
     inset 2px 2px 0 #fff,
     inset -2px -2px 0 var(--shadow-color),
     3px 3px 0 var(--shadow-color);
@@ -244,7 +244,7 @@ body {
 
 .pokemon-card:hover {
   transform: translate(1px, 1px);
-  box-shadow: 
+  box-shadow:
     inset 2px 2px 0 #fff,
     inset -2px -2px 0 var(--shadow-color),
     2px 2px 0 var(--shadow-color);
@@ -283,27 +283,55 @@ body {
   box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #888;
   color: #000 !important;
   text-shadow: none;
-  background: rgba(0,0,0,0.15) !important;
+  background: rgba(0, 0, 0, 0.15) !important;
   backdrop-filter: none;
 }
 
-.rarity-Common { background: #a0a0a0; border-color: #707070; }
-.rarity-Rare { background: #4890e0; border-color: #2060a0; }
-.rarity-Epic { background: #a060c0; border-color: #603080; }
-.rarity-Legendary { background: #f0b030; border-color: #a07020; }
+.rarity-Common {
+  background: #a0a0a0;
+  border-color: #707070;
+}
+
+.rarity-Rare {
+  background: #4890e0;
+  border-color: #2060a0;
+}
+
+.rarity-Epic {
+  background: #a060c0;
+  border-color: #603080;
+}
+
+.rarity-Legendary {
+  background: #f0b030;
+  border-color: #a07020;
+}
 
 /* Rarity background for cards */
 .inventory-card.bg-common,
-.pokemon-card.bg-common { background: #f0f0e0 !important; }
+.pokemon-card.bg-common {
+  background: #f0f0e0 !important;
+}
+
 .inventory-card.bg-rare,
-.pokemon-card.bg-rare { background: #d0e0f0 !important; }
+.pokemon-card.bg-rare {
+  background: #d0e0f0 !important;
+}
+
 .inventory-card.bg-epic,
-.pokemon-card.bg-epic { background: #e0d0f0 !important; }
+.pokemon-card.bg-epic {
+  background: #e0d0f0 !important;
+}
+
 .inventory-card.bg-legendary,
-.pokemon-card.bg-legendary { background: #f8e0a0 !important; }
+.pokemon-card.bg-legendary {
+  background: #f8e0a0 !important;
+}
 
 .inventory-card .inventory-details,
-.pokemon-card .pokemon-info { background: transparent !important; }
+.pokemon-card .pokemon-info {
+  background: transparent !important;
+}
 
 .grid {
   display: grid;
@@ -320,7 +348,7 @@ body {
   font-family: var(--font-pixel);
   font-size: 0.8rem;
   text-transform: uppercase;
-  box-shadow: 
+  box-shadow:
     inset 2px 2px 0 #80b0e0,
     inset -2px -2px 0 #103050,
     3px 3px 0 var(--shadow-color);
@@ -331,7 +359,7 @@ body {
 
 .btn-primary:hover {
   transform: translate(1px, 1px);
-  box-shadow: 
+  box-shadow:
     inset 2px 2px 0 #80b0e0,
     inset -2px -2px 0 #103050,
     2px 2px 0 var(--shadow-color);
@@ -342,7 +370,7 @@ body {
   filter: grayscale(0.5);
   cursor: not-allowed;
   transform: none;
-  box-shadow: 
+  box-shadow:
     inset 2px 2px 0 #80b0e0,
     inset -2px -2px 0 #103050,
     3px 3px 0 var(--shadow-color);
@@ -353,14 +381,14 @@ body {
   text-transform: uppercase;
   border-radius: 0;
   border: 3px solid;
-  box-shadow: inset 2px 2px 0 rgba(255,255,255,0.5), inset -2px -2px 0 rgba(0,0,0,0.3), 3px 3px 0 var(--shadow-color);
+  box-shadow: inset 2px 2px 0 rgba(255, 255, 255, 0.5), inset -2px -2px 0 rgba(0, 0, 0, 0.3), 3px 3px 0 var(--shadow-color);
   cursor: pointer;
   transition: all 0.05s step-end;
 }
 
 .pixel-btn:hover {
   transform: translate(1px, 1px);
-  box-shadow: inset 2px 2px 0 rgba(255,255,255,0.5), inset -2px -2px 0 rgba(0,0,0,0.3), 2px 2px 0 var(--shadow-color);
+  box-shadow: inset 2px 2px 0 rgba(255, 255, 255, 0.5), inset -2px -2px 0 rgba(0, 0, 0, 0.3), 2px 2px 0 var(--shadow-color);
 }
 
 /* ---------- 6. Auth ---------- */
@@ -369,7 +397,7 @@ body {
   margin: 4rem auto;
   background: var(--window-bg);
   border: 5px solid var(--window-border-dark);
-  box-shadow: 
+  box-shadow:
     inset 4px 4px 0 #fff,
     inset -4px -4px 0 var(--shadow-color),
     6px 6px 0 var(--shadow-color);
@@ -444,7 +472,7 @@ body {
 .lobby .card {
   background: var(--window-bg);
   border: 5px solid var(--window-border-dark);
-  box-shadow: 
+  box-shadow:
     inset 4px 4px 0 #fff,
     inset -4px -4px 0 var(--shadow-color),
     6px 6px 0 var(--shadow-color);
@@ -454,7 +482,7 @@ body {
 .lobby .player-info {
   background: var(--window-bg);
   border: 4px solid #2060a0;
-  box-shadow: 
+  box-shadow:
     inset 3px 3px 0 #a0c0e0,
     inset -3px -3px 0 #103050,
     4px 4px 0 var(--shadow-color);
@@ -470,7 +498,7 @@ body {
 
 .lobby .player-info:hover {
   transform: none;
-  box-shadow: 
+  box-shadow:
     inset 3px 3px 0 #a0c0e0,
     inset -3px -3px 0 #103050,
     4px 4px 0 var(--shadow-color);
@@ -481,7 +509,7 @@ body {
   font-size: 1rem;
   text-transform: uppercase;
   color: #103050;
-  text-shadow: 2px 2px 0 rgba(255,255,255,0.5);
+  text-shadow: 2px 2px 0 rgba(255, 255, 255, 0.5);
   margin-bottom: 1rem;
   border-bottom: 2px solid #2060a0;
   padding-bottom: 0.5rem;
@@ -506,7 +534,7 @@ body {
 .lobby .battle-option {
   background: var(--window-bg);
   border: 4px solid #308040;
-  box-shadow: 
+  box-shadow:
     inset 3px 3px 0 #a0d8a0,
     inset -3px -3px 0 #184020,
     4px 4px 0 var(--shadow-color);
@@ -520,7 +548,7 @@ body {
 
 .lobby .battle-option:hover {
   transform: none;
-  box-shadow: 
+  box-shadow:
     inset 3px 3px 0 #a0d8a0,
     inset -3px -3px 0 #184020,
     4px 4px 0 var(--shadow-color);
@@ -531,7 +559,7 @@ body {
   font-size: 0.9rem;
   text-transform: uppercase;
   color: #184020;
-  text-shadow: 2px 2px 0 rgba(255,255,255,0.5);
+  text-shadow: 2px 2px 0 rgba(255, 255, 255, 0.5);
   border-bottom: 2px solid #308040;
   padding-bottom: 0.5rem;
   margin-bottom: 1rem;
@@ -570,7 +598,7 @@ body {
   margin-top: 1rem;
   background: var(--accent-blue);
   border-color: #184878;
-  box-shadow: 
+  box-shadow:
     inset 2px 2px 0 #80b0e0,
     inset -2px -2px 0 #103050,
     3px 3px 0 var(--shadow-color);
@@ -578,7 +606,7 @@ body {
 
 .lobby .btn-primary:hover {
   transform: translate(1px, 1px);
-  box-shadow: 
+  box-shadow:
     inset 2px 2px 0 #80b0e0,
     inset -2px -2px 0 #103050,
     2px 2px 0 var(--shadow-color);
@@ -592,36 +620,50 @@ body {
   transition: transform 0.05s step-end;
   background: var(--window-bg);
   border: 3px solid var(--window-border-dark);
-  box-shadow: 
+  box-shadow:
     inset 2px 2px 0 #fff,
     inset -2px -2px 0 var(--shadow-color),
     3px 3px 0 var(--shadow-color);
 }
 
-.gacha-result.bg-common { background: #f8f8f0; }
-.gacha-result.bg-rare { background: #d0e4f0; }
-.gacha-result.bg-epic { background: #e0d0f0; }
-.gacha-result.bg-legendary { background: #f8e0a0; }
+.gacha-result.bg-common {
+  background: #f8f8f0;
+}
 
-.gacha-card-hidden { cursor: pointer; }
+.gacha-result.bg-rare {
+  background: #d0e4f0;
+}
+
+.gacha-result.bg-epic {
+  background: #e0d0f0;
+}
+
+.gacha-result.bg-legendary {
+  background: #f8e0a0;
+}
+
+.gacha-card-hidden {
+  cursor: pointer;
+}
 
 .gacha-cover {
   display: flex;
   align-items: center;
   justify-content: center;
   position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: repeating-linear-gradient(
-    45deg,
-    #d0d0c0 0px, #d0d0c0 8px,
-    #b8b8a8 8px, #b8b8a8 16px
-  );
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(45deg,
+      #d0d0c0 0px, #d0d0c0 8px,
+      #b8b8a8 8px, #b8b8a8 16px);
   border: 3px solid #686858;
   box-shadow: inset 0 0 0 2px #f0f0e0;
   font-family: var(--font-pixel);
   text-transform: uppercase;
   color: #282818;
-  text-shadow: 2px 2px 0 rgba(255,255,255,0.5);
+  text-shadow: 2px 2px 0 rgba(255, 255, 255, 0.5);
   font-size: 1rem;
   text-align: center;
   transition: background 0.1s step-end;
@@ -629,7 +671,7 @@ body {
 }
 
 .gacha-cover .cover-text {
-  background: rgba(255,255,240,0.9);
+  background: rgba(255, 255, 240, 0.9);
   padding: 0.8rem 1.2rem;
   border: 3px solid #585848;
   box-shadow: inset 2px 2px 0 #fff, inset -2px -2px 0 #808070, 2px 2px 0 #000;
@@ -637,16 +679,14 @@ body {
 }
 
 .gacha-card-hidden:hover .gacha-cover {
-  background: repeating-linear-gradient(
-    45deg,
-    #e0e0d0 0px, #e0e0d0 8px,
-    #c8c8b8 8px, #c8c8b8 16px
-  );
+  background: repeating-linear-gradient(45deg,
+      #e0e0d0 0px, #e0e0d0 8px,
+      #c8c8b8 8px, #c8c8b8 16px);
 }
 
 .gacha-card-hidden:hover {
   transform: translate(1px, 1px);
-  box-shadow: 
+  box-shadow:
     inset 2px 2px 0 #fff,
     inset -2px -2px 0 var(--shadow-color),
     2px 2px 0 var(--shadow-color);
@@ -737,7 +777,7 @@ body {
   margin: 0.5rem 0;
   font-family: var(--font-dialog);
   font-size: 0.75rem;
-  background: rgba(0,0,0,0.05);
+  background: rgba(0, 0, 0, 0.05);
   padding: 0.3rem;
   border: 1px solid var(--window-border-light);
   box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #aaa;
@@ -827,7 +867,7 @@ body {
 .inventory-filters .btn-select-mode {
   background: var(--window-bg);
   border: 3px solid var(--window-border-dark);
-  box-shadow: 
+  box-shadow:
     inset 2px 2px 0 #fff,
     inset -2px -2px 0 var(--shadow-color),
     3px 3px 0 var(--shadow-color);
@@ -847,7 +887,7 @@ body {
   background: var(--accent-blue);
   color: white;
   border-color: #184878;
-  box-shadow: 
+  box-shadow:
     inset 2px 2px 0 #80b0e0,
     inset -2px -2px 0 #103050,
     2px 2px 0 var(--shadow-color);
@@ -859,12 +899,12 @@ body {
   background: var(--accent-gold);
   color: #000;
   border-color: #a07020;
-  box-shadow: 
+  box-shadow:
     inset 2px 2px 0 #ffe080,
     inset -2px -2px 0 #805010,
     3px 3px 0 var(--shadow-color);
   transform: translate(1px, 1px);
-  box-shadow: 
+  box-shadow:
     inset 2px 2px 0 #ffe080,
     inset -2px -2px 0 #805010,
     2px 2px 0 var(--shadow-color);
@@ -886,7 +926,7 @@ body {
 .type-filter {
   background: var(--window-bg);
   border: 3px solid var(--window-border-dark);
-  box-shadow: 
+  box-shadow:
     inset 2px 2px 0 #ddd,
     inset -2px -2px 0 #fff;
   font-family: var(--font-dialog);
@@ -901,7 +941,7 @@ body {
 .search-input:focus,
 .type-filter:focus {
   border-color: var(--accent-blue);
-  box-shadow: 
+  box-shadow:
     inset 2px 2px 0 #c0d8f0,
     inset -2px -2px 0 #fff;
 }
@@ -946,7 +986,7 @@ body {
 .btn-sell-selected-filter {
   background: var(--accent-red);
   border: 3px solid #801010;
-  box-shadow: 
+  box-shadow:
     inset 2px 2px 0 #f08070,
     inset -2px -2px 0 #601010,
     3px 3px 0 var(--shadow-color);
@@ -965,7 +1005,7 @@ body {
 .btn-sell-selected-filter:hover {
   background: #c03020;
   border-color: #601010;
-  box-shadow: 
+  box-shadow:
     inset 2px 2px 0 #f0a090,
     inset -2px -2px 0 #401010,
     2px 2px 0 var(--shadow-color);
@@ -976,7 +1016,7 @@ body {
 .team-section {
   background: var(--window-bg);
   border: 4px solid var(--window-border-dark);
-  box-shadow: 
+  box-shadow:
     inset 3px 3px 0 #fff,
     inset -3px -3px 0 var(--shadow-color),
     4px 4px 0 var(--shadow-color);
@@ -998,7 +1038,7 @@ body {
   min-height: 280px;
   background: var(--window-bg);
   border: 3px solid var(--window-border-dark);
-  box-shadow: 
+  box-shadow:
     inset 2px 2px 0 #fff,
     inset -2px -2px 0 var(--shadow-color),
     3px 3px 0 var(--shadow-color);
@@ -1043,7 +1083,7 @@ body {
   margin-top: auto;
   background: var(--accent-red);
   border: 3px solid #801010;
-  box-shadow: 
+  box-shadow:
     inset 2px 2px 0 #f08070,
     inset -2px -2px 0 #601010,
     2px 2px 0 var(--shadow-color);
@@ -1059,7 +1099,7 @@ body {
 
 .team-pokemon button:hover {
   transform: translate(1px, 1px);
-  box-shadow: 
+  box-shadow:
     inset 2px 2px 0 #f0a090,
     inset -2px -2px 0 #401010,
     1px 1px 0 var(--shadow-color);
@@ -1071,11 +1111,9 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: repeating-linear-gradient(
-    45deg,
-    #d0d8d0 0px, #d0d8d0 8px,
-    #c0c8c0 8px, #c0c8c0 16px
-  );
+  background: repeating-linear-gradient(45deg,
+      #d0d8d0 0px, #d0d8d0 8px,
+      #c0c8c0 8px, #c0c8c0 16px);
   color: #606860;
   font-family: var(--font-pixel);
   font-size: 0.7rem;
@@ -1095,7 +1133,7 @@ body {
 .shop-container .card {
   background: var(--window-bg);
   border: 5px solid var(--window-border-dark);
-  box-shadow: 
+  box-shadow:
     inset 4px 4px 0 #fff,
     inset -4px -4px 0 var(--shadow-color),
     6px 6px 0 var(--shadow-color);
@@ -1105,7 +1143,7 @@ body {
 .shop-info {
   background: var(--window-bg);
   border: 3px solid #2060a0;
-  box-shadow: 
+  box-shadow:
     inset 2px 2px 0 #a0c0e0,
     inset -2px -2px 0 #103050,
     3px 3px 0 var(--shadow-color);
@@ -1126,7 +1164,7 @@ body {
 .pixel-item-card {
   background: var(--window-bg);
   border: 4px solid var(--window-border-dark);
-  box-shadow: 
+  box-shadow:
     inset 3px 3px 0 #fff,
     inset -3px -3px 0 var(--shadow-color),
     4px 4px 0 var(--shadow-color);
@@ -1141,7 +1179,7 @@ body {
 
 .pixel-item-card:hover {
   transform: translate(1px, 1px);
-  box-shadow: 
+  box-shadow:
     inset 3px 3px 0 #fff,
     inset -3px -3px 0 var(--shadow-color),
     3px 3px 0 var(--shadow-color);
@@ -1163,7 +1201,7 @@ body {
 }
 
 .item-stats {
-  background: rgba(0,0,0,0.05);
+  background: rgba(0, 0, 0, 0.05);
   border: 2px solid var(--window-border-light);
   box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #ccc;
   padding: 0.5rem;
@@ -1171,7 +1209,10 @@ body {
   font-size: 0.9rem;
 }
 
-.item-stats p { margin: 0.2rem 0; }
+.item-stats p {
+  margin: 0.2rem 0;
+}
+
 .item-stats strong {
   font-family: var(--font-pixel);
   font-size: 0.7rem;
@@ -1181,7 +1222,7 @@ body {
 .buy-btn.pixel-btn {
   background: var(--accent-blue);
   border: 3px solid #184878;
-  box-shadow: 
+  box-shadow:
     inset 2px 2px 0 #80b0e0,
     inset -2px -2px 0 #103050,
     3px 3px 0 var(--shadow-color);
@@ -1198,7 +1239,7 @@ body {
 
 .buy-btn.pixel-btn:hover:not(:disabled) {
   transform: translate(1px, 1px);
-  box-shadow: 
+  box-shadow:
     inset 2px 2px 0 #80b0e0,
     inset -2px -2px 0 #103050,
     2px 2px 0 var(--shadow-color);
@@ -1210,21 +1251,29 @@ body {
   filter: grayscale(0.3);
   cursor: not-allowed;
   transform: none;
-  box-shadow: 
+  box-shadow:
     inset 2px 2px 0 #80b0e0,
     inset -2px -2px 0 #103050,
     3px 3px 0 var(--shadow-color);
 }
 
-.pixel-item-card.bg-rare { background: #4890e0 !important; }
-.pixel-item-card.bg-epic { background: #a060c0 !important; }
-.pixel-item-card.bg-legendary { background: #f0b030 !important; }
+.pixel-item-card.bg-rare {
+  background: #4890e0 !important;
+}
+
+.pixel-item-card.bg-epic {
+  background: #a060c0 !important;
+}
+
+.pixel-item-card.bg-legendary {
+  background: #f0b030 !important;
+}
 
 /* ---------- 12. Leaderboard ---------- */
 .leaderboard .card {
   background: var(--window-bg);
   border: 5px solid var(--window-border-dark);
-  box-shadow: 
+  box-shadow:
     inset 4px 4px 0 #fff,
     inset -4px -4px 0 var(--shadow-color),
     6px 6px 0 var(--shadow-color);
@@ -1234,7 +1283,7 @@ body {
 .pixel-table {
   background: var(--window-bg);
   border: 3px solid var(--window-border-dark);
-  box-shadow: 
+  box-shadow:
     inset 2px 2px 0 #fff,
     inset -2px -2px 0 var(--shadow-color);
   overflow: hidden;
@@ -1265,9 +1314,12 @@ body {
   font-size: 1rem;
   color: var(--text-dark);
   transition: background 0.05s step-end;
+  border-left: 4px solid #bad1e7;
 }
 
-.pixel-row:last-child { border-bottom: none; }
+.pixel-row:last-child {
+  border-bottom: none;
+}
 
 .pixel-row.rank-1 {
   background: #f8e0a0 !important;
@@ -1298,12 +1350,12 @@ body {
 /* ---------- 13. Battle Arena ---------- */
 .battle-arena {
   background: #183820;
-  background-image: 
+  background-image:
     radial-gradient(circle at 20% 30%, #286030 0%, #103018 80%),
-    repeating-linear-gradient(0deg, transparent, transparent 4px, rgba(0,0,0,0.1) 4px, rgba(0,0,0,0.1) 8px);
+    repeating-linear-gradient(0deg, transparent, transparent 4px, rgba(0, 0, 0, 0.1) 4px, rgba(0, 0, 0, 0.1) 8px);
   min-height: 80vh;
   border: 5px solid #204828;
-  box-shadow: 
+  box-shadow:
     inset 0 0 0 2px #60a060,
     inset 0 0 20px #000,
     6px 6px 0 var(--shadow-color);
@@ -1311,6 +1363,16 @@ body {
   color: #f0f8f0;
   position: relative;
   border-radius: 0;
+}
+
+/* Cancel button in loading screen */
+.cancel-loading-btn {
+  margin-top: 20px;
+  background: var(--accent-red);
+  border-color: #801010;
+  color: white;
+  padding: 0.6rem 1.2rem;
+  font-size: 0.8rem;
 }
 
 /* Battle field layout */
@@ -1346,9 +1408,10 @@ body {
   margin-bottom: 0.3rem;
 }
 
-.your-turn, .opponent-turn {
+.your-turn,
+.opponent-turn {
   font-size: 1rem;
-  background: rgba(0,0,0,0.6);
+  background: rgba(0, 0, 0, 0.6);
   padding: 0.3rem 0.8rem;
   border: 2px solid #f8e0a0;
   box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #888;
@@ -1362,7 +1425,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0,0,0,0.2);
+  background: rgba(0, 0, 0, 0.2);
   border: 2px solid #407850;
   box-shadow: inset 0 0 10px #000;
   margin: 0.5rem 0;
@@ -1388,7 +1451,8 @@ body {
   text-shadow: 2px 2px 0 #000;
   pointer-events: none;
   z-index: 50;
-  animation: damageFadeOut 5s ease-out forwards;   /* 3 seconds */
+  animation: damageFadeOut 5s ease-out forwards;
+  /* 3 seconds */
   white-space: nowrap;
 }
 
@@ -1397,6 +1461,7 @@ body {
     opacity: 1;
     transform: translate(-50%, -50%) translateY(0);
   }
+
   100% {
     opacity: 0;
     transform: translate(-50%, -50%) translateY(-30px);
@@ -1408,7 +1473,7 @@ body {
   width: 240px;
   background: #f8f8e8;
   border: 4px solid #2060a0 !important;
-  box-shadow: 
+  box-shadow:
     inset 3px 3px 0 #e0e8f0,
     inset -3px -3px 0 #103050,
     4px 4px 0 #0a1a0a !important;
@@ -1421,7 +1486,7 @@ body {
   width: 240px;
   background: #f0f8e8;
   border: 4px solid #308040 !important;
-  box-shadow: 
+  box-shadow:
     inset 3px 3px 0 #c0e0c0,
     inset -3px -3px 0 #184020,
     4px 4px 0 #0a1a0a !important;
@@ -1468,10 +1533,15 @@ body {
   border: 3px solid var(--window-border-dark);
   padding: 0.4rem;
   background: var(--window-bg);
-  box-shadow: 
+  box-shadow:
     inset 2px 2px 0 #fff,
     inset -2px -2px 0 var(--shadow-color),
     3px 3px 0 #0a1a0a;
+}
+
+.opponent-team-list p,
+.player-team-list p {
+  color: #184878;
 }
 
 .team-mini-list {
@@ -1479,6 +1549,7 @@ body {
   justify-content: center;
   gap: 0.5rem;
   flex-wrap: wrap;
+  margin-top: 5px;
 }
 
 .team-mini-item {
@@ -1537,16 +1608,18 @@ body {
   box-shadow: inset 2px 2px 0 #3a5a3a, inset -2px -2px 0 #0a1a0a, 3px 3px 0 #0a1a0a;
   padding: 1rem;
   border-radius: 0;
-  height: 250px;                 /* fixed height prevents shifting */
+  height: 250px;
+  /* fixed height prevents shifting */
 }
 
 .battle-log.pixel-box {
   flex: 1;
-  max-height: 100%;               /* fill the row height */
+  max-height: 100%;
+  /* fill the row height */
   overflow-y: auto;
   background: #182018;
   border: 4px solid #306030 !important;
-  box-shadow: 
+  box-shadow:
     inset 3px 3px 0 #508050,
     inset -3px -3px 0 #102010,
     4px 4px 0 #0a1a0a !important;
@@ -1583,7 +1656,7 @@ body {
   height: 100%;
   background: #2a3a2a;
   border: 4px solid #60a060 !important;
-  box-shadow: 
+  box-shadow:
     inset 3px 3px 0 #a0d0a0,
     inset -3px -3px 0 #206020,
     4px 4px 0 #0a1a0a !important;
@@ -1664,7 +1737,10 @@ body {
 /* ---------- 14. Modals (Shared) ---------- */
 .modal-overlay {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
@@ -1678,7 +1754,7 @@ body {
 .modal-content {
   background: var(--window-bg);
   border: 5px solid var(--window-border-dark);
-  box-shadow: 
+  box-shadow:
     inset 4px 4px 0 #fff,
     inset -4px -4px 0 var(--shadow-color),
     8px 8px 0 rgba(0, 0, 0, 0.4);
@@ -1704,34 +1780,50 @@ body {
   margin-bottom: 1rem;
 }
 
-.btn-confirm, .btn-cancel, .btn-continue {
+.btn-confirm,
+.btn-cancel,
+.btn-continue {
   font-family: var(--font-pixel);
   font-size: 0.7rem;
   text-transform: uppercase;
   border: 3px solid;
-  box-shadow: inset 2px 2px 0 rgba(255,255,255,0.5), inset -2px -2px 0 rgba(0,0,0,0.3), 3px 3px 0 var(--shadow-color);
+  box-shadow: inset 2px 2px 0 rgba(255, 255, 255, 0.5), inset -2px -2px 0 rgba(0, 0, 0, 0.3), 3px 3px 0 var(--shadow-color);
   padding: 0.6rem 1.2rem;
   cursor: pointer;
   transition: all 0.05s step-end;
   border-radius: 0;
 }
 
-.btn-confirm { background: var(--accent-red); border-color: #801010; color: white; }
-.btn-cancel { background: #707070; border-color: #404040; color: white; }
-.btn-continue { background: var(--accent-blue); border-color: #184878; color: white; }
+.btn-confirm {
+  background: var(--accent-red);
+  border-color: #801010;
+  color: white;
+}
+
+.btn-cancel {
+  background: #707070;
+  border-color: #404040;
+  color: white;
+}
+
+.btn-continue {
+  background: var(--accent-blue);
+  border-color: #184878;
+  color: white;
+}
 
 .btn-confirm:hover,
 .btn-cancel:hover,
 .btn-continue:hover {
   transform: translate(1px, 1px);
-  box-shadow: inset 2px 2px 0 rgba(255,255,255,0.5), inset -2px -2px 0 rgba(0,0,0,0.3), 2px 2px 0 var(--shadow-color);
+  box-shadow: inset 2px 2px 0 rgba(255, 255, 255, 0.5), inset -2px -2px 0 rgba(0, 0, 0, 0.3), 2px 2px 0 var(--shadow-color);
 }
 
 /* Feed modal input */
 .feed-modal input[type="number"] {
   background: var(--window-bg);
   border: 3px solid var(--window-border-dark);
-  box-shadow: 
+  box-shadow:
     inset 2px 2px 0 #ddd,
     inset -2px -2px 0 #fff;
   font-family: var(--font-dialog);
@@ -1746,7 +1838,7 @@ body {
 
 .feed-modal input[type="number"]:focus {
   border-color: var(--accent-blue);
-  box-shadow: 
+  box-shadow:
     inset 2px 2px 0 #c0d8f0,
     inset -2px -2px 0 #fff;
 }
@@ -1755,7 +1847,7 @@ body {
 .move-info-modal {
   background: var(--window-bg);
   border: 5px solid var(--window-border-dark);
-  box-shadow: 
+  box-shadow:
     inset 4px 4px 0 #fff,
     inset -4px -4px 0 var(--shadow-color),
     6px 6px 0 rgba(0, 0, 0, 0.5);
@@ -1844,6 +1936,7 @@ body {
 body.modal-open {
   overflow: hidden;
 }
+
 /* Command menu (Fight / Quit) */
 .command-menu.pixel-box {
   flex: 1;
@@ -1855,7 +1948,7 @@ body.modal-open {
   gap: 1rem;
   background: #203020;
   border: 4px solid #609060 !important;
-  box-shadow: 
+  box-shadow:
     inset 3px 3px 0 #a0d0a0,
     inset -3px -3px 0 #206020,
     4px 4px 0 #0a1a0a !important;
@@ -1868,9 +1961,9 @@ body.modal-open {
   text-transform: uppercase;
   padding: 0.8rem 2rem;
   border: 3px solid;
-  box-shadow: 
-    inset 2px 2px 0 rgba(255,255,255,0.5),
-    inset -2px -2px 0 rgba(0,0,0,0.3),
+  box-shadow:
+    inset 2px 2px 0 rgba(255, 255, 255, 0.5),
+    inset -2px -2px 0 rgba(0, 0, 0, 0.3),
     3px 3px 0 var(--shadow-color);
   cursor: pointer;
   transition: all 0.05s step-end;
@@ -1881,9 +1974,9 @@ body.modal-open {
 
 .command-btn:hover {
   transform: translate(1px, 1px);
-  box-shadow: 
-    inset 2px 2px 0 rgba(255,255,255,0.5),
-    inset -2px -2px 0 rgba(0,0,0,0.3),
+  box-shadow:
+    inset 2px 2px 0 rgba(255, 255, 255, 0.5),
+    inset -2px -2px 0 rgba(0, 0, 0, 0.3),
     2px 2px 0 var(--shadow-color);
 }
 
@@ -1936,7 +2029,7 @@ body.modal-open {
   padding: 0.3rem 0.5rem;
   background: var(--window-bg);
   border: 2px solid var(--window-border-dark);
-  box-shadow: 
+  box-shadow:
     inset 1px 1px 0 #fff,
     inset -1px -1px 0 var(--shadow-color);
   border-radius: 0;
@@ -1951,8 +2044,14 @@ body.modal-open {
   border-radius: 0;
 }
 
-.type-icon { image-rendering: pixelated; }
-.status-icon { background: #303030; border: 1px solid #000; }
+.type-icon {
+  image-rendering: pixelated;
+}
+
+.status-icon {
+  background: #303030;
+  border: 1px solid #000;
+}
 
 .hp-bar {
   height: 8px;

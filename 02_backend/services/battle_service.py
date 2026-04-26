@@ -18,147 +18,174 @@ def handle_join_battle(data, socketio, active_battles, db):
     room = data['room']
     print(f"JOIN BATTLE: User {user_id} joining room {room}")
 
-    # Ensure all user's Pokemon have valid stats
-    user_pokemons = db.query(UserPokemon).filter_by(user_id=user_id).all()
-    for up in user_pokemons:
-        if up.max_hp == 0 or up.attack == 0:
-            print(f"Recalculating stats for {up.pokemon.name} (level {up.level})")
-            init_user_pokemon_stats(up, db)
-    db.commit()
+    try:
+        # Ensure all user's Pokemon have valid stats
+        user_pokemons = db.query(UserPokemon).filter_by(user_id=user_id).all()
+        for up in user_pokemons:
+            if up.max_hp == 0 or up.attack == 0:
+                print(f"Recalculating stats for {up.pokemon.name} (level {up.level})")
+                init_user_pokemon_stats(up, db)
+        db.commit()
 
-    # Get player's team
-    player_team = db.query(UserPokemon).filter_by(user_id=user_id, is_in_team=True).all()
-    if not player_team:
-        player_team = db.query(UserPokemon).filter_by(user_id=user_id).limit(3).all()
+        # Get player's team, ignoring orphaned records (where pokemon is missing)
+        player_team_all = db.query(UserPokemon).filter_by(user_id=user_id).all()
+        # Keep only those whose pokemon relation still exists
+        player_team_all = [up for up in player_team_all if up.pokemon is not None]
 
-    # AI opponent (random)
-    ai_pokemon = db.query(Pokemon).order_by(func.random()).limit(3).all()
+        if not player_team_all:
+            socketio.emit('error', {'message': 'You have no Pokémon to battle with! Please summon some first.'}, room=room)
+            return
 
-    player_pokemon_data = []
-    for up in player_team:
-        pokemon_moves = db.query(PokemonMove).filter(
-            PokemonMove.pokemon_id == up.pokemon_id,
-            PokemonMove.learn_level <= up.level
-        ).order_by(PokemonMove.learn_level).limit(4).all()
+        # Prefer team members
+        player_team = [up for up in player_team_all if up.is_in_team]
+        if not player_team:
+            # Fallback to first 3 valid ones
+            player_team = player_team_all[:3]
+        else:
+            # Limit to 3
+            player_team = player_team[:3]
 
-        moves = []
-        for pm in pokemon_moves:
-            move = db.query(Move).filter(Move.id == pm.move_id).first()
-            if move:
-                moves.append({
-                    'id': move.id,
-                    'name': move.name,
-                    'power': move.power or 0,
-                    'type': move.type,
-                    'accuracy': move.accuracy or 100,
-                    'pp': move.pp,
-                    'damage_class': move.damage_class,
-                })
-        if not moves:
-            moves = [
-                {'name': 'Tackle', 'power': 40, 'type': 'normal', 'accuracy': 100, 'pp': 35, 'damage_class': 'physical'},
-                {'name': 'Growl', 'power': 0, 'type': 'normal', 'accuracy': 100, 'pp': 40, 'damage_class': 'status'}
-            ]
+        # AI opponent (random)
+        ai_pokemon = db.query(Pokemon).order_by(func.random()).limit(3).all()
 
-        player_pokemon_data.append({
-            'id': up.pokemon_id,
-            'name': up.pokemon.name,
-            'hp': up.max_hp,
-            'max_hp': up.max_hp,
-            'attack': up.attack,
-            'defense': up.defense,
-            'special': up.special,
-            'speed': up.speed,
-            'image_url': up.pokemon.image_url,
-            'level': up.level,
-            'types': [up.pokemon.type],
-            'moves': moves,
-            'current_exp': up.xp or 0
-        })
-        print(f"Loaded {len(moves)} moves for {up.pokemon.name}")
+        if not ai_pokemon:
+            socketio.emit('error', {'message': 'No Pokémon available in the database. Please contact the administrator.'}, room=room)
+            return
+        
+        player_pokemon_data = []
+        for up in player_team:
+            pokemon_moves = db.query(PokemonMove).filter(
+                PokemonMove.pokemon_id == up.pokemon_id,
+                PokemonMove.learn_level <= up.level
+            ).order_by(PokemonMove.learn_level).limit(4).all()
 
-    ai_pokemon_data = []
-    for p in ai_pokemon:
-        ai_moves_query = db.query(PokemonMove).filter(
-            PokemonMove.pokemon_id == p.id,
-            PokemonMove.learn_level <= 50
-        ).order_by(PokemonMove.learn_level).limit(4).all()
+            moves = []
+            for pm in pokemon_moves:
+                move = db.query(Move).filter(Move.id == pm.move_id).first()
+                if move:
+                    moves.append({
+                        'id': move.id,
+                        'name': move.name,
+                        'power': move.power or 0,
+                        'type': move.type,
+                        'accuracy': move.accuracy or 100,
+                        'pp': move.pp,
+                        'damage_class': move.damage_class,
+                    })
+            if not moves:
+                moves = [
+                    {'name': 'Tackle', 'power': 40, 'type': 'normal', 'accuracy': 100, 'pp': 35, 'damage_class': 'physical'},
+                    {'name': 'Growl', 'power': 0, 'type': 'normal', 'accuracy': 100, 'pp': 40, 'damage_class': 'status'}
+                ]
 
-        ai_moves = []
-        for pm in ai_moves_query:
-            move = db.query(Move).filter(Move.id == pm.move_id).first()
-            if move:
-                ai_moves.append({
-                    'id': move.id,
-                    'name': move.name,
-                    'power': move.power or 0,
-                    'type': move.type,
-                    'accuracy': move.accuracy or 100,
-                    'pp': move.pp,
-                    'damage_class': move.damage_class,
-                })
-        if not ai_moves:
-            ai_moves = [
-                {'name': 'Tackle', 'power': 40, 'type': 'normal', 'accuracy': 100, 'pp': 35, 'damage_class': 'physical'},
-                {'name': 'Scratch', 'power': 40, 'type': 'normal', 'accuracy': 100, 'pp': 35, 'damage_class': 'physical'}
-            ]
+            poke = up.pokemon
+            if not poke:
+                continue   # skip any unexpected None (shouldn't happen now)
+            player_pokemon_data.append({
+                'id': up.pokemon_id,
+                'name': up.pokemon.name,
+                'hp': up.max_hp,
+                'max_hp': up.max_hp,
+                'attack': up.attack,
+                'defense': up.defense,
+                'special': up.special,
+                'speed': up.speed,
+                'image_url': up.pokemon.image_url,
+                'level': up.level,
+                'types': [up.pokemon.type],
+                'moves': moves,
+                'current_exp': up.xp or 0
+            })
+            print(f"Loaded {len(moves)} moves for {up.pokemon.name}")
 
-        stats = calculate_stats_on_level_up(p.hp, p.attack, p.defense, p.special_attack, p.speed, 50)
-        ai_pokemon_data.append({
-            'id': p.id,
-            'name': p.name,
-            'hp': stats['hp'],
-            'max_hp': stats['hp'],
-            'attack': stats['attack'],
-            'defense': stats['defense'],
-            'special': stats['special'],
-            'speed': stats['speed'],
-            'image_url': p.image_url,
-            'level': 50,
-            'types': [p.type],
-            'moves': ai_moves,
-            'base_experience': p.base_experience
-        })
-        print(f"Loaded {len(ai_moves)} moves for AI {p.name}")
+        ai_pokemon_data = []
+        for p in ai_pokemon:
+            ai_moves_query = db.query(PokemonMove).filter(
+                PokemonMove.pokemon_id == p.id,
+                PokemonMove.learn_level <= 50
+            ).order_by(PokemonMove.learn_level).limit(4).all()
 
-    # Determine first turn based on speed
-    player_first = player_pokemon_data[0]
-    ai_first = ai_pokemon_data[0]
-    player_speed = get_effective_speed(player_first)
-    ai_speed = get_effective_speed(ai_first)
-    if player_speed >= ai_speed:
-        first_turn = user_id
-    else:
-        first_turn = 'ai'
+            ai_moves = []
+            for pm in ai_moves_query:
+                move = db.query(Move).filter(Move.id == pm.move_id).first()
+                if move:
+                    ai_moves.append({
+                        'id': move.id,
+                        'name': move.name,
+                        'power': move.power or 0,
+                        'type': move.type,
+                        'accuracy': move.accuracy or 100,
+                        'pp': move.pp,
+                        'damage_class': move.damage_class,
+                    })
+            if not ai_moves:
+                ai_moves = [
+                    {'name': 'Tackle', 'power': 40, 'type': 'normal', 'accuracy': 100, 'pp': 35, 'damage_class': 'physical'},
+                    {'name': 'Scratch', 'power': 40, 'type': 'normal', 'accuracy': 100, 'pp': 35, 'damage_class': 'physical'}
+                ]
 
-    active_battles[room] = {
-        'players': {
-            user_id: {
-                'hp': [p['hp'] for p in player_pokemon_data],
-                'max_hp': [p['max_hp'] for p in player_pokemon_data],
-                'pokemon': player_pokemon_data,
-                'current_pokemon': 0,
-                'exp': [p.get('current_exp', 0) for p in player_pokemon_data]
+            stats = calculate_stats_on_level_up(p.hp, p.attack, p.defense, p.special_attack, p.speed, 50)
+            ai_pokemon_data.append({
+                'id': p.id,
+                'name': p.name,
+                'hp': stats['hp'],
+                'max_hp': stats['hp'],
+                'attack': stats['attack'],
+                'defense': stats['defense'],
+                'special': stats['special'],
+                'speed': stats['speed'],
+                'image_url': p.image_url,
+                'level': 50,
+                'types': [p.type],
+                'moves': ai_moves,
+                'base_experience': p.base_experience
+            })
+            print(f"Loaded {len(ai_moves)} moves for AI {p.name}")
+
+        # Determine first turn based on speed
+        player_first = player_pokemon_data[0]
+        ai_first = ai_pokemon_data[0]
+        player_speed = get_effective_speed(player_first)
+        ai_speed = get_effective_speed(ai_first)
+        if player_speed >= ai_speed:
+            first_turn = user_id
+        else:
+            first_turn = 'ai'
+
+        active_battles[room] = {
+            'players': {
+                user_id: {
+                    'hp': [p['hp'] for p in player_pokemon_data],
+                    'max_hp': [p['max_hp'] for p in player_pokemon_data],
+                    'pokemon': player_pokemon_data,
+                    'current_pokemon': 0,
+                    'exp': [p.get('current_exp', 0) for p in player_pokemon_data]
+                },
+                'ai': {
+                    'hp': [p['hp'] for p in ai_pokemon_data],
+                    'max_hp': [p['max_hp'] for p in ai_pokemon_data],
+                    'pokemon': ai_pokemon_data,
+                    'current_pokemon': 0
+                }
             },
-            'ai': {
-                'hp': [p['hp'] for p in ai_pokemon_data],
-                'max_hp': [p['max_hp'] for p in ai_pokemon_data],
-                'pokemon': ai_pokemon_data,
-                'current_pokemon': 0
-            }
-        },
-        'turn': first_turn,
-        'battle_log': ['Battle started!']
-    }
+            'turn': first_turn,
+            'battle_log': ['Battle started!']
+        }
 
-    socketio.emit('battle_started', {
-        'room': room,
-        'opponent': 'AI',
-        'player_pokemon': player_pokemon_data,
-        'opponent_pokemon': ai_pokemon_data,
-        'turn': first_turn
-    }, room=room)
-    print(f"Battle started event sent for room {room}")
+        socketio.emit('battle_started', {
+            'room': room,
+            'opponent': 'AI',
+            'player_pokemon': player_pokemon_data,
+            'opponent_pokemon': ai_pokemon_data,
+            'turn': first_turn
+        }, room=room)
+        print(f"Battle started event sent for room {room}")
+    except Exception as e:
+        print(f"Error in handle_join_battle: {e}")
+        try:
+            socketio.emit('error', {'message': 'An error occurred while starting the battle. Please try again.'}, room=room)
+        except:
+            pass
 
 def handle_battle_action(data, socketio, active_battles, make_ai_move_func):
     room = data['room']
@@ -352,7 +379,11 @@ def make_ai_move(room, socketio, active_battles):
         return
 
     ai_moves = current_ai_pokemon.get('moves', [])
-    move = ai_moves[0] if ai_moves else {'name': 'Tackle', 'power': 40, 'type': 'normal', 'damage_class': 'physical'}
+    damaging_moves = [m for m in ai_moves if m.get('power', 0) > 0]
+    if damaging_moves:
+        move = random.choice(damaging_moves)
+    else:
+        move = {'name': 'Tackle', 'power': 40, 'type': 'normal', 'damage_class': 'physical'}
 
     damage, effectiveness, is_critical = calculate_damage(current_ai_pokemon, target_pokemon, move)
 

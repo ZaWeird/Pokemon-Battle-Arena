@@ -42,6 +42,8 @@ function Inventory({ user, setUser }) {
   const [feedLoading, setFeedLoading] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState(null);
   const [feedQuantity, setFeedQuantity] = useState(1);
+  const [hasTeamSelected, setHasTeamSelected] = useState(false);
+  const [onlyOnePokemon, setOnlyOnePokemon] = useState(false);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -153,6 +155,23 @@ function Inventory({ user, setUser }) {
       toast.error('No Pokémon selected');
       return;
     }
+
+    // Prevent releasing the last Pokémon
+    if (pokemons.length <= 1) {
+      setOnlyOnePokemon(true);
+      setHasTeamSelected(false);
+      setShowBatchConfirm(true);
+      return;
+    }
+
+    setOnlyOnePokemon(false);
+
+    // Check if any selected Pokémon is in the team
+    const teamSelected = Array.from(selectedPokemonIds).some(id => {
+      const pokemon = pokemons.find(p => p.id === id);
+      return pokemon && pokemon.is_in_team;
+    });
+    setHasTeamSelected(teamSelected);
     setShowBatchConfirm(true);
   };
 
@@ -182,6 +201,8 @@ function Inventory({ user, setUser }) {
 
   const cancelBatchSell = () => {
     setShowBatchConfirm(false);
+    setHasTeamSelected(false);
+    setOnlyOnePokemon(false);
   };
 
   const getRarityClass = (rarity) => {
@@ -404,13 +425,35 @@ function Inventory({ user, setUser }) {
       {showBatchConfirm && (
         <div className="modal-overlay" onClick={cancelBatchSell}>
           <div className="modal-content confirm-modal" onClick={(e) => e.stopPropagation()}>
-            <h3>Confirm Batch Release</h3>
-            <p>Are you sure you want to release <strong>{selectedPokemonIds.size} Pokémon</strong>?</p>
-            <p>You will receive coins based on their rarity.</p>
-            <div className="modal-buttons">
-              <button className="btn-confirm pixel-btn" onClick={confirmBatchSell}>Yes, Release All</button>
-              <button className="btn-cancel pixel-btn" onClick={cancelBatchSell}>Cancel</button>
-            </div>
+            {onlyOnePokemon ? (
+              <>
+                <h3>Cannot Release Last Pokémon</h3>
+                <p>You cannot release your only Pokémon!</p>
+                <p>You need at least one Pokémon to battle.</p>
+                <div className="modal-buttons">
+                  <button className="btn-cancel pixel-btn" onClick={cancelBatchSell}>Cancel</button>
+                </div>
+              </>
+            ) : hasTeamSelected ? (
+              <>
+                <h3>Cannot Release Team Pokémon</h3>
+                <p>You're selecting a Pokémon that's in your team!</p>
+                <p>Please remove them from your team first.</p>
+                <div className="modal-buttons">
+                  <button className="btn-cancel pixel-btn" onClick={cancelBatchSell}>Cancel</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h3>Confirm Batch Release</h3>
+                <p>Are you sure you want to release <strong>{selectedPokemonIds.size} Pokémon</strong>?</p>
+                <p>You will receive coins based on their rarity.</p>
+                <div className="modal-buttons">
+                  <button className="btn-confirm pixel-btn" onClick={confirmBatchSell}>Yes, Release All</button>
+                  <button className="btn-cancel pixel-btn" onClick={cancelBatchSell}>Cancel</button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
