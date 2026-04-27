@@ -12,12 +12,20 @@ from services.pokeapi_service import init_user_pokemon_stats
 from dependencies import get_db
 
 active_battles = {}
+pending_levels = {}  # Temporary storage for levels of PvE battles before they start
 
 def handle_join_battle(data, socketio, active_battles, db):
     user_id = data['user_id']
     room = data['room']
     print(f"JOIN BATTLE: User {user_id} joining room {room}")
+    # Try to get level from socket data, then fall back to pending_levels
+    battle_level = data.get('level')
+    if battle_level is None:
+        battle_level = pending_levels.pop(room, 50)
+    else:
+        pending_levels.pop(room, None)   # clean up just in case
 
+    print(f"Battle level set to {battle_level} for room {room}")
     try:
         # Ensure all user's Pokemon have valid stats
         user_pokemons = db.query(UserPokemon).filter_by(user_id=user_id).all()
@@ -124,7 +132,7 @@ def handle_join_battle(data, socketio, active_battles, db):
                     {'name': 'Scratch', 'power': 40, 'type': 'normal', 'accuracy': 100, 'pp': 35, 'damage_class': 'physical'}
                 ]
 
-            stats = calculate_stats_on_level_up(p.hp, p.attack, p.defense, p.special_attack, p.speed, 50)
+            stats = calculate_stats_on_level_up(p.hp, p.attack, p.defense, p.special_attack, p.speed, battle_level)
             ai_pokemon_data.append({
                 'id': p.id,
                 'name': p.name,
@@ -135,7 +143,7 @@ def handle_join_battle(data, socketio, active_battles, db):
                 'special': stats['special'],
                 'speed': stats['speed'],
                 'image_url': p.image_url,
-                'level': 50,
+                'level': battle_level,
                 'types': [p.type],
                 'moves': ai_moves,
                 'base_experience': p.base_experience

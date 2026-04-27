@@ -612,6 +612,91 @@ body {
     2px 2px 0 var(--shadow-color);
 }
 
+/* Stage Select Modal */
+.stage-modal {
+  background: var(--window-bg);
+  border: 5px solid var(--window-border-dark);
+  box-shadow:
+    inset 4px 4px 0 #fff,
+    inset -4px -4px 0 var(--shadow-color),
+    8px 8px 0 rgba(0, 0, 0, 0.4);
+  padding: 1.5rem;
+  max-width: 750px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  color: var(--text-dark);
+  border-radius: 0;
+  font-family: var(--font-dialog);
+  position: relative;
+}
+
+.stage-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);   /* exactly 4 columns */
+  gap: 0.8rem;
+  margin: 1.5rem 0;
+}
+
+.stage-card {
+  cursor: pointer;
+  transition: transform 0.05s step-end;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.stage-card:hover {
+  transform: translate(1px, 1px);
+  box-shadow: 
+    inset 2px 2px 0 #fff,
+    inset -2px -2px 0 var(--shadow-color),
+    2px 2px 0 var(--shadow-color);
+}
+.stage-card.pixel-box {
+  background: var(--window-bg);
+  border: 3px solid var(--window-border-dark);
+  box-shadow: 
+    inset 2px 2px 0 #fff,
+    inset -2px -2px 0 var(--shadow-color),
+    3px 3px 0 var(--shadow-color);
+  padding:0.8rem;
+  border-radius: 0;
+}
+
+.stage-image {
+  width: 70px;
+  height: 70px;
+  image-rendering: pixelated;
+  object-fit: contain;
+  margin-bottom: 0.8rem;
+}
+
+.stage-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-family: var(--font-pixel);
+}
+
+.stage-number {
+  font-size: 0.7rem;
+  color: var(--accent-blue);
+  text-transform: uppercase;
+}
+
+.stage-name {
+  font-size: 0.75rem;
+  color: var(--text-dark);
+}
+
+.stage-level {
+  font-size: 0.8rem;
+  font-weight: bold;
+  color: var(--accent-red);
+}
+
 /* ---------- 8. Gacha ---------- */
 .gacha-result {
   position: relative;
@@ -753,7 +838,7 @@ body {
 
 .rarity-and-types-compact .pokemon-rarity {
   font-size: 0.6rem;
-  padding: 0.1rem 0.4rem;
+  padding: 0.3rem 0.4rem;
 }
 
 .rarity-and-types-compact .type-group {
@@ -762,7 +847,7 @@ body {
 
 .rarity-and-types-compact .type-item {
   padding: 0.1rem 0.3rem;
-  font-size: 0.6rem;
+  font-size: 0.8rem;
 }
 
 .rarity-and-types-compact .type-icon {
