@@ -42,12 +42,12 @@ function Shop({ user, setUser }) {
         }
     };
 
-    // Determine rarity class based on item size/name/exp_value
     const getItemRarityClass = (item) => {
         const name = item.name.toLowerCase();
-        if (name.includes('large') || item.exp_value > 150) return 'bg-legendary';
-        if (name.includes('medium') || item.exp_value > 50) return 'bg-epic';
-        return 'bg-rare'; // small or default
+        if (name.includes('ultimate')) return 'bg-ultimate';
+        if (name.includes('large')) return 'bg-legendary';
+        if (name.includes('medium')) return 'bg-epic';
+        return 'bg-rare';
     };
 
     return (

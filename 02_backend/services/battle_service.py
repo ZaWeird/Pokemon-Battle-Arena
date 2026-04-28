@@ -1,33 +1,33 @@
 # 02_backend/services/battle_service.py
 import random
-import math
 from sqlalchemy import func
 from flask_socketio import emit
 from models import User, UserPokemon, Pokemon, Move, PokemonMove
 from services.damage_service import calculate_damage
-from services.experience_service import calculate_stats_on_level_up, award_battle_exp
-from services.move_effects_service import calculate_move_accuracy
+from services.experience_service import (
+    calculate_stats_on_level_up,
+    award_battle_end_total
+)
+from services.move_accuracy_service import calculate_move_accuracy
 from services.turn_order import can_move, get_effective_speed
 from services.pokeapi_service import init_user_pokemon_stats
 from dependencies import get_db
 
 active_battles = {}
-pending_levels = {}  # Temporary storage for levels of PvE battles before they start
+pending_levels = {}
 
 def handle_join_battle(data, socketio, active_battles, db):
     user_id = data['user_id']
     room = data['room']
     print(f"JOIN BATTLE: User {user_id} joining room {room}")
-    # Try to get level from socket data, then fall back to pending_levels
     battle_level = data.get('level')
     if battle_level is None:
         battle_level = pending_levels.pop(room, 50)
     else:
-        pending_levels.pop(room, None)   # clean up just in case
+        pending_levels.pop(room, None)
 
     print(f"Battle level set to {battle_level} for room {room}")
     try:
-        # Ensure all user's Pokemon have valid stats
         user_pokemons = db.query(UserPokemon).filter_by(user_id=user_id).all()
         for up in user_pokemons:
             if up.max_hp == 0 or up.attack == 0:
@@ -35,31 +35,24 @@ def handle_join_battle(data, socketio, active_battles, db):
                 init_user_pokemon_stats(up, db)
         db.commit()
 
-        # Get player's team, ignoring orphaned records (where pokemon is missing)
         player_team_all = db.query(UserPokemon).filter_by(user_id=user_id).all()
-        # Keep only those whose pokemon relation still exists
         player_team_all = [up for up in player_team_all if up.pokemon is not None]
 
         if not player_team_all:
             socketio.emit('error', {'message': 'You have no Pokémon to battle with! Please summon some first.'}, room=room)
             return
 
-        # Prefer team members
         player_team = [up for up in player_team_all if up.is_in_team]
         if not player_team:
-            # Fallback to first 3 valid ones
             player_team = player_team_all[:3]
         else:
-            # Limit to 3
             player_team = player_team[:3]
 
-        # AI opponent (random)
         ai_pokemon = db.query(Pokemon).order_by(func.random()).limit(3).all()
-
         if not ai_pokemon:
             socketio.emit('error', {'message': 'No Pokémon available in the database. Please contact the administrator.'}, room=room)
             return
-        
+
         player_pokemon_data = []
         for up in player_team:
             pokemon_moves = db.query(PokemonMove).filter(
@@ -88,9 +81,10 @@ def handle_join_battle(data, socketio, active_battles, db):
 
             poke = up.pokemon
             if not poke:
-                continue   # skip any unexpected None (shouldn't happen now)
+                continue
             player_pokemon_data.append({
                 'id': up.pokemon_id,
+                'user_pokemon_id': up.id,          # needed for EXP lookup
                 'name': up.pokemon.name,
                 'hp': up.max_hp,
                 'max_hp': up.max_hp,
@@ -146,19 +140,17 @@ def handle_join_battle(data, socketio, active_battles, db):
                 'level': battle_level,
                 'types': [p.type],
                 'moves': ai_moves,
-                'base_experience': p.base_experience
+                'base_experience': p.base_experience,
+                'rarity': p.rarity                   # needed for EXP formula
             })
             print(f"Loaded {len(ai_moves)} moves for AI {p.name}")
 
-        # Determine first turn based on speed
+        # Determine first turn
         player_first = player_pokemon_data[0]
         ai_first = ai_pokemon_data[0]
         player_speed = get_effective_speed(player_first)
         ai_speed = get_effective_speed(ai_first)
-        if player_speed >= ai_speed:
-            first_turn = user_id
-        else:
-            first_turn = 'ai'
+        first_turn = user_id if player_speed >= ai_speed else 'ai'
 
         active_battles[room] = {
             'players': {
@@ -177,7 +169,8 @@ def handle_join_battle(data, socketio, active_battles, db):
                 }
             },
             'turn': first_turn,
-            'battle_log': ['Battle started!']
+            'battle_log': ['Battle started!'],
+            'defeated_opponents': []                 # track defeated AI Pokémon for EXP
         }
 
         socketio.emit('battle_started', {
@@ -272,25 +265,48 @@ def handle_battle_action(data, socketio, active_battles, make_ai_move_func):
 
         battle['battle_log'].append(log_entry)
 
+        # Faint handling for AI Pokémon
         if opponent['hp'][opponent['current_pokemon']] <= 0:
-            battle['battle_log'].append(f"{target_pokemon['name']} fainted!")
+            faint_msg = f"{target_pokemon['name']} fainted!"
+            battle['battle_log'].append(faint_msg)
+
+            # Record the defeated opponent for later EXP calculation
+            battle.setdefault('defeated_opponents', []).append({
+                'level': target_pokemon['level'],
+                'rarity': target_pokemon.get('rarity', 'Common')
+            })
+
             remaining = [hp for hp in opponent['hp'] if hp > 0]
             if remaining:
                 for i, hp in enumerate(opponent['hp']):
                     if hp > 0:
                         opponent['current_pokemon'] = i
-                        battle['battle_log'].append(f"AI sent out {opponent['pokemon'][i]['name']}!")
+                        sendout_msg = f"AI sent out {opponent['pokemon'][i]['name']}!"
+                        battle['battle_log'].append(sendout_msg)
                         break
+                log_entry = f"{log_entry}\n{faint_msg}\n{sendout_msg}"
             else:
-                exp_gained, level_up_msgs = award_battle_exp(user_id, player, target_pokemon, battle['battle_log'])
-                battle['battle_log'].extend(level_up_msgs)
-
+                # Player wins – all opponents fainted
                 db = next(get_db())
-                user = db.query(User).filter_by(id=user_id).first()
-                user.wins += 1
-                user.coins += 50
-                db.commit()
-                db.close()
+                try:
+                    # Award EXP at battle end (win)
+                    exp_gained, level_up_msgs = award_battle_end_total(
+                        user_id, player, battle['defeated_opponents'], True, db
+                    )
+                    battle['battle_log'].extend(level_up_msgs)
+                finally:
+                    db.close()
+
+                # Update user stats
+                db = next(get_db())
+                try:
+                    user = db.query(User).filter_by(id=user_id).first()
+                    if user:
+                        user.wins += 1
+                        user.coins += 50
+                        db.commit()
+                finally:
+                    db.close()
 
                 socketio.emit('battle_ended', {
                     'winner': user_id,
@@ -414,27 +430,44 @@ def make_ai_move(room, socketio, active_battles):
     battle['battle_log'].append(log_entry)
 
     if player['hp'][player['current_pokemon']] <= 0:
-        battle['battle_log'].append(f"{target_pokemon['name']} fainted!")
+        faint_msg = f"{target_pokemon['name']} fainted!"
+        battle['battle_log'].append(faint_msg)
         remaining = [hp for hp in player['hp'] if hp > 0]
         if remaining:
             for i, hp in enumerate(player['hp']):
                 if hp > 0:
                     player['current_pokemon'] = i
-                    battle['battle_log'].append(f"You sent out {player['pokemon'][i]['name']}!")
+                    sendout_msg = f"You sent out {player['pokemon'][i]['name']}!"
+                    battle['battle_log'].append(sendout_msg)
                     break
+            log_entry = f"{log_entry}\n{faint_msg}\n{sendout_msg}"
         else:
+            # Player loses – award EXP for defeated opponents (collected so far)
             db = next(get_db())
-            user = db.query(User).filter_by(id=player_id).first()
-            user.losses += 1
-            user.coins += 20
-            db.commit()
-            db.close()
+            try:
+                exp_gained, level_up_msgs = award_battle_end_total(
+                    player_id, player, battle.get('defeated_opponents', []), False, db
+                )
+                battle['battle_log'].extend(level_up_msgs)
+            finally:
+                db.close()
+
+            db = next(get_db())
+            try:
+                user = db.query(User).filter_by(id=player_id).first()
+                if user:
+                    user.losses += 1
+                    user.coins += 20
+                    db.commit()
+            finally:
+                db.close()
 
             socketio.emit('battle_ended', {
                 'winner': 'ai',
                 'log': battle['battle_log'],
-                'exp_gained': 10,
-                'coins_gained': 20
+                'exp_gained': exp_gained,
+                'coins_gained': 20,
+                'level_ups': level_up_msgs
             }, room=room)
             del active_battles[room]
             return

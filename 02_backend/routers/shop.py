@@ -120,7 +120,6 @@ def feed_pokemon():
             user_pokemon.level = lvl
             level_up_messages.append(f"Level up to {lvl}!")
     # Update HP if current HP is zero? Not needed; stats updated.
-
     user_pokemon.xp = new_exp
     user_item.quantity -= quantity
     if user_item.quantity == 0:

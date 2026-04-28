@@ -4,8 +4,8 @@ import math
 def calculate_stats_on_level_up(base_hp, base_attack, base_defense, base_special, base_speed, level):
     """
     Calculate Pokemon stats at a specific level (Gen 1 formula)
-    HP: floor(((baseHP × 2) × level) / 100) + level + 10
-    Other Stats: floor(((baseStat × 2) × level) / 100) + 5
+    HP: floor(((baseHP * 2) * level) / 100) + level + 10
+    Other Stats: floor(((baseStat * 2) * level) / 100) + 5
     """
     hp = math.floor(((base_hp * 2) * level) / 100) + level + 10
     attack = math.floor(((base_attack * 2) * level) / 100) + 5

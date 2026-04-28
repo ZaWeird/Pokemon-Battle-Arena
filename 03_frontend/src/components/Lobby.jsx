@@ -76,9 +76,8 @@ function Lobby({ user, setUser }) {
             <h3>Player vs AI</h3>
             <p>Battle against AI opponents to earn coins and experience!</p>
             <ul>
-              <li>Victory: 50 coins + XP</li>
-              <li>Defeat: 20 coins</li>
-              <li>Always gain exps for your pokemon!</li>
+              <li>Gain more coins on winning, so try your best!</li>
+              <li>Always gain experience for your pokemon!</li>
             </ul>
             <button className="btn-primary" onClick={() => setShowStageModal(true)} disabled={loading}>
               {loading ? 'Starting Battle...' : 'Start PvE Battle'}

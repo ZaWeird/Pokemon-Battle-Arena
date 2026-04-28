@@ -13,6 +13,6 @@ with app.app_context():
 
     from services.pokeapi_service import fetch_and_seed_gen1
     print("Starting full Gen 1 seeding (including moves)...")
-    print("This will take 5–10 minutes.")
+    print("This will take 5-10 minutes.")
     added, failed = fetch_and_seed_gen1()
     print(f"Seeding complete. Added {len(added)} Pokémon, failed: {len(failed)}")

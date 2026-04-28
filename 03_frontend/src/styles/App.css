@@ -1353,6 +1353,48 @@ body {
 .pixel-item-card.bg-legendary {
   background: #f0b030 !important;
 }
+/* Ultimate Candy – rainbow background */
+.pixel-item-card.bg-ultimate {
+  background: linear-gradient(
+    135deg,
+    #ff0000, #ff8800, #ffff00, #88ff00,
+    #00ff00, #00ff88, #00ffff, #0088ff,
+    #0000ff, #8800ff, #ff00ff, #ff0088
+  ) !important;
+  background-size: 200% 200% !important;
+  animation: rainbowShift 3s ease infinite;
+  border: 4px solid #d4a020 !important;
+  box-shadow: 
+    inset 3px 3px 0 rgba(255,255,255,0.5),
+    inset -3px -3px 0 rgba(0,0,0,0.3),
+    4px 4px 0 var(--shadow-color) !important;
+  color: #fff;
+  text-shadow: 1px 1px 0 #000;
+}
+
+@keyframes rainbowShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Keep text readable on rainbow background */
+.bg-ultimate h3,
+.bg-ultimate .item-description,
+.bg-ultimate .item-stats p,
+.bg-ultimate .item-stats strong {
+  color: #fff;
+  text-shadow: 1px 1px 0 #000;
+}
+
+.bg-ultimate .buy-btn.pixel-btn {
+  background: #d4a020;
+  border-color: #a07010;
+  box-shadow: 
+    inset 2px 2px 0 #ffe080,
+    inset -2px -2px 0 #805010,
+    3px 3px 0 var(--shadow-color);
+}
 
 /* ---------- 12. Leaderboard ---------- */
 .leaderboard .card {
@@ -1817,6 +1859,35 @@ body {
   color: #f8e0a0;
   padding: 0.5rem 1.5rem;
   z-index: 100;
+}
+/* Opponent left group: info box + team list stacked */
+.opponent-left-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+}
+
+/* Player right group: info box + team list stacked */
+.player-right-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+}
+
+/* Sprites can now be larger */
+.opponent-sprite-container,
+.player-sprite-container {
+  width: 300px;
+  height: 300px;
+}
+
+/* Keep team list width within the column */
+.opponent-team-list.pixel-box,
+.player-team-list.pixel-box {
+  width: 100%;
+  max-width: 260px;   /* matches info box width */
 }
 
 /* ---------- 14. Modals (Shared) ---------- */

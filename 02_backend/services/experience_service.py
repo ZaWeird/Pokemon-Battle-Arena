@@ -1,5 +1,7 @@
 # 02_backend/services/experience_service.py
 import math
+from sqlalchemy.orm import Session
+from models import UserPokemon, Pokemon
 
 # Gen 1 Level thresholds (EXP needed to reach each level)
 LEVEL_THRESHOLDS = {
@@ -20,7 +22,15 @@ LEVEL_THRESHOLDS = {
     99: 276000, 100: 29701
 }
 
+RARITY_BASE_EXP = {
+    'Common': 4,
+    'Rare': 8,
+    'Epic': 16,
+    'Legendary': 24
+}
+
 def get_level_from_exp(total_exp):
+    """Return the current level based on accumulated EXP."""
     for level, threshold in sorted(LEVEL_THRESHOLDS.items()):
         if total_exp < threshold:
             return level - 1
@@ -49,10 +59,76 @@ def calculate_stats_on_level_up(base_hp, base_attack, base_defense, base_special
         'speed': max(1, speed)
     }
 
-def award_battle_exp(user_id, player_state, defeated_pokemon, battle_log):
-    """Award EXP to participating Pokémon (simplified – expand as needed)"""
-    # For now, give 20 EXP; you can implement full EXP distribution later.
-    exp_gained = 20
+def award_battle_end_total(user_id, player_state, defeated_opponents, won, db):
+    """
+    Award EXP to each of the player's Pokémon after a battle ends.
+    - For each defeated opponent: state * opponent_level * rarity_base_exp
+    - Flat bonus: 64 if won, 32 if lost
+    state = 2 if the player's Pokémon is alive, 1 if fainted.
+    """
+    bonus = 64 if won else 32
+    total_exp_gained = 0
     level_up_messages = []
-    # Here you would update the database and check for level-ups.
-    return exp_gained, level_up_messages
+
+    player_pokemon_list = player_state['pokemon']
+    hp_list = player_state['hp']
+
+    for i, pokemon in enumerate(player_pokemon_list):
+        state = 2 if hp_list[i] > 0 else 1
+
+        exp_from_opponents = 0
+        for opp in defeated_opponents:
+            opp_level = opp.get('level', 1)
+            opp_rarity = opp.get('rarity', 'Common')
+            base = RARITY_BASE_EXP.get(opp_rarity, 16)
+            exp_from_opponents += state * opp_level * base
+
+        total_pokemon_exp = exp_from_opponents + bonus
+        if total_pokemon_exp <= 0:
+            continue
+
+        total_exp_gained += total_pokemon_exp
+
+        # Find the UserPokemon record (prefer user_pokemon_id stored in pokemon dict)
+        up_id = pokemon.get('user_pokemon_id')
+        if up_id is None:
+            up = db.query(UserPokemon).filter_by(
+                user_id=user_id, pokemon_id=pokemon['id']
+            ).first()
+        else:
+            up = db.query(UserPokemon).filter_by(id=up_id).first()
+        if not up:
+            continue
+
+        up.xp = (up.xp or 0) + total_pokemon_exp
+        old_level = up.level
+        new_level = get_level_from_exp(up.xp)
+        if new_level > old_level:
+            up.level = new_level
+            base_pokemon = up.pokemon
+            if base_pokemon:
+                new_stats = calculate_stats_on_level_up(
+                    base_pokemon.hp, base_pokemon.attack, base_pokemon.defense,
+                    base_pokemon.special_attack, base_pokemon.speed, new_level
+                )
+                up.max_hp = new_stats['hp']
+                up.attack = new_stats['attack']
+                up.defense = new_stats['defense']
+                up.special = new_stats['special']
+                up.speed = new_stats['speed']
+                # Update the in‑memory Pokémon data (won't affect battle, but good for consistency)
+                pokemon['hp'] = up.max_hp
+                pokemon['max_hp'] = up.max_hp
+                pokemon['attack'] = up.attack
+                pokemon['defense'] = up.defense
+                pokemon['special'] = up.special
+                pokemon['speed'] = up.speed
+                pokemon['level'] = new_level
+
+                level_up_messages.append(
+                    f"{base_pokemon.name} grew to level {new_level}!"
+                )
+        db.add(up)
+
+    db.commit()
+    return total_exp_gained, level_up_messages
