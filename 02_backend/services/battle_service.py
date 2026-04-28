@@ -289,7 +289,6 @@ def handle_battle_action(data, socketio, active_battles, make_ai_move_func):
                 # Player wins – all opponents fainted
                 db = next(get_db())
                 try:
-                    # Award EXP at battle end (win)
                     exp_gained, level_up_msgs = award_battle_end_total(
                         user_id, player, battle['defeated_opponents'], True, db
                     )
@@ -297,13 +296,15 @@ def handle_battle_action(data, socketio, active_battles, make_ai_move_func):
                 finally:
                     db.close()
 
-                # Update user stats
+                # New coin reward: opponent level
+                coins_won = target_pokemon['level']
+
                 db = next(get_db())
                 try:
                     user = db.query(User).filter_by(id=user_id).first()
                     if user:
                         user.wins += 1
-                        user.coins += 50
+                        user.coins += coins_won
                         db.commit()
                 finally:
                     db.close()
@@ -312,7 +313,7 @@ def handle_battle_action(data, socketio, active_battles, make_ai_move_func):
                     'winner': user_id,
                     'log': battle['battle_log'],
                     'exp_gained': exp_gained,
-                    'coins_gained': 50,
+                    'coins_gained': coins_won,
                     'level_ups': level_up_msgs
                 }, room=room)
                 del active_battles[room]
@@ -442,7 +443,7 @@ def make_ai_move(room, socketio, active_battles):
                     break
             log_entry = f"{log_entry}\n{faint_msg}\n{sendout_msg}"
         else:
-            # Player loses – award EXP for defeated opponents (collected so far)
+            # Player loses – award lesser EXP and coins
             db = next(get_db())
             try:
                 exp_gained, level_up_msgs = award_battle_end_total(
@@ -452,12 +453,15 @@ def make_ai_move(room, socketio, active_battles):
             finally:
                 db.close()
 
+            # Coin reward on loss: 40% of opponent level, minimum 1
+            coins_lost = current_ai_pokemon['level'] * 0.4
+
             db = next(get_db())
             try:
                 user = db.query(User).filter_by(id=player_id).first()
                 if user:
                     user.losses += 1
-                    user.coins += 20
+                    user.coins += coins_lost
                     db.commit()
             finally:
                 db.close()
@@ -466,7 +470,7 @@ def make_ai_move(room, socketio, active_battles):
                 'winner': 'ai',
                 'log': battle['battle_log'],
                 'exp_gained': exp_gained,
-                'coins_gained': 20,
+                'coins_gained': coins_lost,
                 'level_ups': level_up_msgs
             }, room=room)
             del active_battles[room]

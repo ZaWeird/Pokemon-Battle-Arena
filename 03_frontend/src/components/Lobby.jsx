@@ -77,6 +77,7 @@ function Lobby({ user, setUser }) {
             <p>Battle against AI opponents to earn coins and experience!</p>
             <ul>
               <li>Gain more coins on winning, so try your best!</li>
+              <li>Higher level stages give better rewards, but are tougher!</li>
               <li>Always gain experience for your pokemon!</li>
             </ul>
             <button className="btn-primary" onClick={() => setShowStageModal(true)} disabled={loading}>

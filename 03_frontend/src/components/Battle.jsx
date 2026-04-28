@@ -215,7 +215,7 @@ function Battle({ user, setUser }) {
 
     newSocket.on('battle_ended', async (data) => {
       const isWinner = data.winner === user.id;
-      const coinsGained = data.coins_gained || (isWinner ? 50 : 20);
+      const coinsGained = data.coins_gained ?? 0;
       const xpGained = data.exp_gained || (isWinner ? 20 : 10);
       const resultText = isWinner ? 'Victory!' : 'Defeat!';
       if (isWinner) toast.success('Victory! You won the battle!');
