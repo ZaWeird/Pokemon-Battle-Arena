@@ -64,7 +64,7 @@ function Battle({ user, setUser }) {
     if (percentage > 20) return '#f59e0b';
     return '#ef4444';
   };
-
+  // status are currently not in use, only leave here in case of future use
   const getStatusIcon = (status) => {
     if (!status) return null;
     const icons = {
@@ -341,8 +341,8 @@ function Battle({ user, setUser }) {
           <div className="modal-content result-modal">
             <h2 className={`result-title ${battleResult.result}`}>{battleResult.resultText}</h2>
             <div className="result-details">
-              <div className="result-item"><span className="result-label">Coins Gained:</span><span className="result-value">+{battleResult.coinsGained}</span></div>
-              <div className="result-item"><span className="result-label">Total Experience Gained:</span><span className="result-value">+{battleResult.xpGained} XP</span></div>
+              <div className="result-item"><span className="result-label">Coins Gained: </span><span className="result-value">+{battleResult.coinsGained}</span></div>
+              <div className="result-item"><span className="result-label">Total Experience Gained: </span><span className="result-value">+{battleResult.xpGained} XP</span></div>
             </div>
             <button className="btn-continue" onClick={closeResultModal}>Continue</button>
           </div>

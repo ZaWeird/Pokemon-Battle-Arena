@@ -1213,6 +1213,105 @@ body {
   margin: 0 auto;
   display: block;
 }
+/* ---- Feed modal redesign ---- */
+.feed-item.pixel-box {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.6rem;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+  background: var(--window-bg);
+  border: 3px solid var(--window-border-dark);
+  box-shadow: inset 2px 2px 0 #fff, inset -2px -2px 0 var(--shadow-color);
+}
+
+.feed-checkbox-label {
+  position: relative;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.pixel-checkbox {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--window-border-dark);
+  background: var(--window-bg);
+  box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 var(--shadow-color);
+  margin-right: 0.5rem;
+  cursor: pointer;
+  border-radius: 0;
+}
+
+.checkbox-indicator {
+  position: absolute;
+  left: 2px;
+  top: -4px;
+  width: 20px;
+  height: 20px;
+  pointer-events: none;
+  font-size: 1.2rem;
+  color: var(--accent-blue);
+  text-shadow: 1px 1px 0 #000;
+}
+
+.feed-item-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-dialog);
+}
+
+.feed-item-qty {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.pixel-input {
+  background: var(--window-bg);
+  border: 2px solid var(--window-border-dark);
+  box-shadow: inset 1px 1px 0 #ddd, inset -1px -1px 0 #fff;
+  font-family: var(--font-dialog);
+  padding: 0.2rem 0.4rem;
+  border-radius: 0;
+  text-align: center;
+  width: 60px;
+}
+
+.selected-text {
+  font-family: var(--font-pixel);
+  font-size: 0.6rem;
+  color: var(--accent-blue);
+  text-transform: uppercase;
+  display: inline;
+  margin-left: 0.3rem;
+}
+
+.feed-selected-btn {
+  background: var(--accent-blue);
+  border-color: #184878;
+  color: white;
+  flex: 1;
+  padding-top: 0.4rem;
+  padding-bottom: 0.4rem;
+  padding-left: 0.4rem;
+}
+
+.feed-selected-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.feed-modal .cancel-btn {
+  flex: 1;
+  padding-top: 0.4rem;
+  padding-bottom: 0.4rem;
+  padding-left: 0.4rem;
+}
+
 
 /* ---------- 11. Shop ---------- */
 .shop-container .card {
@@ -1915,7 +2014,7 @@ body {
     inset -4px -4px 0 var(--shadow-color),
     8px 8px 0 rgba(0, 0, 0, 0.4);
   padding: 1.5rem;
-  max-width: 450px;
+  max-width: 500px;
   width: 90%;
   max-height: 80vh;
   overflow-y: auto;

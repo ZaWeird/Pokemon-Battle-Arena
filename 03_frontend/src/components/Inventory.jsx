@@ -40,12 +40,10 @@ function Inventory({ user, setUser }) {
   const [showFeedModal, setShowFeedModal] = useState(false);
   const [userItems, setUserItems] = useState([]);
   const [feedLoading, setFeedLoading] = useState(false);
-  const [selectedItemId, setSelectedItemId] = useState(null);
-  const [feedQuantity, setFeedQuantity] = useState(1);
+  const [selectedItems, setSelectedItems] = useState({});
   const [hasTeamSelected, setHasTeamSelected] = useState(false);
   const [onlyOnePokemon, setOnlyOnePokemon] = useState(false);
 
-  // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
@@ -87,50 +85,24 @@ function Inventory({ user, setUser }) {
         headers: { Authorization: localStorage.getItem('token') }
       });
       setUserItems(res.data);
+      return res.data; // return data for chaining
     } catch (err) {
       console.error(err);
       toast.error('Could not load your items');
+      return [];
     }
   };
 
-  const openFeedModal = (pokemon) => {
+  const openFeedModal = async (pokemon) => {
     setSelectedPokemon(pokemon);
-    fetchUserItems();
+    const items = await fetchUserItems();
+    // initialize selectedItems with all items unchecked, qty=1
+    const initial = {};
+    items.forEach(item => {
+      initial[item.item_id] = { selected: false, quantity: 1 };
+    });
+    setSelectedItems(initial);
     setShowFeedModal(true);
-    setSelectedItemId(null);
-    setFeedQuantity(1);
-  };
-
-  const handleFeed = async () => {
-    if (!selectedItemId) {
-      toast.error('Select an item');
-      return;
-    }
-    if (feedQuantity < 1) {
-      toast.error('Quantity must be at least 1');
-      return;
-    }
-    setFeedLoading(true);
-    try {
-      const res = await axios.post('/api/feed', {
-        user_pokemon_id: selectedPokemon.id,
-        item_id: selectedItemId,
-        quantity: feedQuantity
-      }, {
-        headers: { Authorization: localStorage.getItem('token') }
-      });
-      toast.success(res.data.message);
-      if (res.data.level_up_messages && res.data.level_up_messages.length) {
-        res.data.level_up_messages.forEach(msg => toast(msg, { icon: '⭐' }));
-      }
-      await fetchInventory();
-      await refreshUser();
-      setShowFeedModal(false);
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Feeding failed');
-    } finally {
-      setFeedLoading(false);
-    }
   };
 
   const toggleSelectMode = () => {
@@ -156,7 +128,6 @@ function Inventory({ user, setUser }) {
       return;
     }
 
-    // Prevent releasing the last Pokémon
     if (pokemons.length <= 1) {
       setOnlyOnePokemon(true);
       setHasTeamSelected(false);
@@ -166,7 +137,6 @@ function Inventory({ user, setUser }) {
 
     setOnlyOnePokemon(false);
 
-    // Check if any selected Pokémon is in the team
     const teamSelected = Array.from(selectedPokemonIds).some(id => {
       const pokemon = pokemons.find(p => p.id === id);
       return pokemon && pokemon.is_in_team;
@@ -242,7 +212,6 @@ function Inventory({ user, setUser }) {
     );
   };
 
-  // Filtering logic (unchanged)
   const filteredPokemons = pokemons.filter(pokemon => {
     if (filter === 'team' && !pokemon.is_in_team) return false;
     if (searchTerm && !pokemon.name.toLowerCase().includes(searchTerm.toLowerCase())) return false;
@@ -253,7 +222,6 @@ function Inventory({ user, setUser }) {
     return true;
   });
 
-  // Pagination logic
   const totalPages = Math.ceil(filteredPokemons.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const paginatedPokemons = filteredPokemons.slice(startIndex, startIndex + ITEMS_PER_PAGE);
@@ -317,7 +285,6 @@ function Inventory({ user, setUser }) {
             {selectMode ? 'Cancel Selection' : 'Select Mode'}
           </button>
 
-          {/* Sell Selected button - appears only in select mode with items selected */}
           {selectMode && selectedPokemonIds.size > 0 && (
             <button
               className="btn-sell-selected-filter"
@@ -345,12 +312,18 @@ function Inventory({ user, setUser }) {
               {paginatedPokemons.map(pokemon => (
                 <div key={pokemon.id} className={`pokemon-card inventory-card ${pokemon.is_in_team ? 'in-team' : ''} bg-${pokemon.rarity.toLowerCase()}`}>
                   {selectMode && (
-                    <div className="pokemon-checkbox">
-                      <input
-                        type="checkbox"
-                        checked={selectedPokemonIds.has(pokemon.id)}
-                        onChange={() => toggleSelectPokemon(pokemon.id)}
-                      />
+                    <div className="pokemon-checkbox pixel-checkbox-wrapper">
+                      <label className="feed-checkbox-label">
+                        <input
+                          type="checkbox"
+                          className="pixel-checkbox"
+                          checked={selectedPokemonIds.has(pokemon.id)}
+                          onChange={() => toggleSelectPokemon(pokemon.id)}
+                        />
+                        <span className="checkbox-indicator">
+                          {selectedPokemonIds.has(pokemon.id) ? '✓' : ''}
+                        </span>
+                      </label>
                     </div>
                   )}
                   <div className="inventory-card-content">
@@ -381,7 +354,6 @@ function Inventory({ user, setUser }) {
               ))}
             </div>
 
-            {/* Pagination Controls */}
             {totalPages > 1 && (
               <div className="pagination">
                 <button
@@ -421,7 +393,7 @@ function Inventory({ user, setUser }) {
         )}
       </div>
 
-      {/* Modals remain unchanged but will use pixel styling via CSS */}
+      {/* Batch release confirmation modal */}
       {showBatchConfirm && (
         <div className="modal-overlay" onClick={cancelBatchSell}>
           <div className="modal-content confirm-modal" onClick={(e) => e.stopPropagation()}>
@@ -458,6 +430,7 @@ function Inventory({ user, setUser }) {
         </div>
       )}
 
+      {/* Feed modal – redesigned with checkboxes */}
       {showFeedModal && selectedPokemon && (
         <div className="modal-overlay" onClick={() => setShowFeedModal(false)}>
           <div className="modal-content feed-modal" onClick={(e) => e.stopPropagation()}>
@@ -466,31 +439,54 @@ function Inventory({ user, setUser }) {
             <p>Current Level: {selectedPokemon.level}</p>
             <div className="items-list">
               {userItems.filter(item => item.quantity > 0).map(item => (
-                <div key={item.item_id} className="feed-item">
-                  <div>
+                <div key={item.item_id} className="feed-item pixel-box">
+                  <label className="feed-checkbox-label">
+                    <input
+                      type="checkbox"
+                      className="pixel-checkbox"
+                      checked={selectedItems[item.item_id]?.selected || false}
+                      onChange={(e) => {
+                        setSelectedItems(prev => ({
+                          ...prev,
+                          [item.item_id]: {
+                            ...prev[item.item_id],
+                            selected: e.target.checked
+                          }
+                        }));
+                      }}
+                    />
+                    <span className="checkbox-indicator">
+                      {selectedItems[item.item_id]?.selected ? '✓' : ''}
+                    </span>
+                  </label>
+                  <div className="feed-item-details">
                     <span>{item.name} (+{item.exp_value} EXP each)</span>
-                    <span style={{ marginLeft: '1rem' }}>Owned: {item.quantity}</span>
+                    <span>
+                      Owned: {item.quantity}
+                      {selectedItems[item.item_id]?.selected && (
+                        <span className="selected-text"> - item selected</span>
+                      )}
+                    </span>
                   </div>
-                  <div>
-                    <span style={{ marginRight: '0.5rem' }}>Qty:</span>
+                  <div className="feed-item-qty">
+                    <span>Qty:</span>
                     <input
                       type="number"
                       min="1"
                       max={item.quantity}
-                      value={selectedItemId === item.item_id ? feedQuantity : 1}
+                      value={selectedItems[item.item_id]?.quantity || 1}
                       onChange={(e) => {
-                        setSelectedItemId(item.item_id);
-                        setFeedQuantity(parseInt(e.target.value) || 1);
+                        const qty = Math.min(Math.max(1, parseInt(e.target.value) || 1), item.quantity);
+                        setSelectedItems(prev => ({
+                          ...prev,
+                          [item.item_id]: {
+                            ...prev[item.item_id],
+                            quantity: qty
+                          }
+                        }));
                       }}
-                      style={{ width: '60px', marginRight: '0.5rem' }}
+                      className="pixel-input"
                     />
-                    <button className="pixel-btn" onClick={() => {
-                      setSelectedItemId(item.item_id);
-                      setFeedQuantity(1);
-                      handleFeed();
-                    }} disabled={feedLoading}>
-                      Feed
-                    </button>
                   </div>
                 </div>
               ))}
@@ -498,7 +494,56 @@ function Inventory({ user, setUser }) {
                 <p>You have no EXP candies. Buy some from the Shop!</p>
               )}
             </div>
-            <button className="close-modal pixel-btn" onClick={() => setShowFeedModal(false)}>Close</button>
+            <div className="modal-buttons">
+              <button
+                className="pixel-btn feed-selected-btn"
+                disabled={feedLoading || Object.values(selectedItems).every(s => !s.selected)}
+                onClick={async () => {
+                  const toFeed = Object.entries(selectedItems)
+                    .filter(([_, s]) => s.selected)
+                    .map(([itemId, s]) => {
+                      const item = userItems.find(i => i.item_id === parseInt(itemId));
+                      return {
+                        item_id: parseInt(itemId),
+                        quantity: s.quantity,
+                        expValue: item?.exp_value || 0
+                      };
+                    });
+
+                  if (toFeed.length === 0) {
+                    toast.error('No items selected');
+                    return;
+                  }
+
+                  // Calculate total EXP before feeding
+                  const totalExp = toFeed.reduce((sum, feed) => sum + (feed.expValue * feed.quantity), 0);
+
+                  setFeedLoading(true);
+                  try {
+                    for (const feed of toFeed) {
+                      await axios.post('/api/feed', {
+                        user_pokemon_id: selectedPokemon.id,
+                        item_id: feed.item_id,
+                        quantity: feed.quantity
+                      }, {
+                        headers: { Authorization: localStorage.getItem('token') }
+                      });
+                    }
+                    toast.success(`Fed ${toFeed.length} item(s)! Total EXP gained: +${totalExp}`);
+                    await fetchInventory();
+                    await refreshUser();
+                    setShowFeedModal(false);
+                  } catch (err) {
+                    toast.error(err.response?.data?.message || 'Feeding failed');
+                  } finally {
+                    setFeedLoading(false);
+                  }
+                }}
+              >
+                Feed Selected ({Object.values(selectedItems).filter(s => s.selected).length})
+              </button>
+              <button className="pixel-btn cancel-btn" onClick={() => setShowFeedModal(false)}>Cancel</button>
+            </div>
           </div>
         </div>
       )}
