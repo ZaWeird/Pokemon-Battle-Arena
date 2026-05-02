@@ -49,18 +49,20 @@ function AppContent() {
           <div className="nav-brand">
             <img src="/pba.png" alt="Pokémon Battle Arena Logo" className="nav-logo" />
           </div>
-          <div className="nav-menu">
-            <a href="/lobby">Lobby</a>
-            <a href="/gacha">Gacha</a>
-            <a href="/inventory">Inventory</a>
-            <a href="/team">Team Builder</a>
-            <a href="/shop">Shop</a>
-            <a href="/leaderboard">Leaderboard</a>
-          </div>
-          <div className="nav-user">
-            <span>{user.username}</span>
-            <span className="coins">Coins: {user.coins}</span>
-            <button onClick={handleLogout} className="btn-logout">Logout</button>
+          <div className="nav-right">
+            <div className="nav-menu">
+              <a href="/lobby">Lobby</a>
+              <a href="/gacha">Gacha</a>
+              <a href="/inventory">Inventory</a>
+              <a href="/team">Team Builder</a>
+              <a href="/shop">Shop</a>
+              <a href="/leaderboard">Leaderboard</a>
+            </div>
+            <div className="nav-user">
+              <span>{user.username}</span>
+              <span className="coins">Coins: {user.coins}</span>
+              <button onClick={handleLogout} className="btn-logout">Logout</button>
+            </div>
           </div>
         </nav>
       )}

@@ -24,7 +24,6 @@ const TYPE_ICONS = {
   fairy: `${TYPE_ICON_BASE}/fairy.svg`,
 };
 
-const ITEMS_PER_PAGE = 60;
 const CARDS_PER_ROW = 4;
 
 function Inventory({ user, setUser }) {
@@ -43,11 +42,21 @@ function Inventory({ user, setUser }) {
   const [selectedItems, setSelectedItems] = useState({});
   const [hasTeamSelected, setHasTeamSelected] = useState(false);
   const [onlyOnePokemon, setOnlyOnePokemon] = useState(false);
-
   const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(
+    window.innerWidth >= 960 ? 60 : 30
+  );
 
   useEffect(() => {
     fetchInventory();
+  }, []);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setItemsPerPage(window.innerWidth >= 960 ? 60 : 30);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const fetchInventory = async () => {
@@ -85,7 +94,7 @@ function Inventory({ user, setUser }) {
         headers: { Authorization: localStorage.getItem('token') }
       });
       setUserItems(res.data);
-      return res.data; // return data for chaining
+      return res.data;
     } catch (err) {
       console.error(err);
       toast.error('Could not load your items');
@@ -96,7 +105,6 @@ function Inventory({ user, setUser }) {
   const openFeedModal = async (pokemon) => {
     setSelectedPokemon(pokemon);
     const items = await fetchUserItems();
-    // initialize selectedItems with all items unchecked, qty=1
     const initial = {};
     items.forEach(item => {
       initial[item.item_id] = { selected: false, quantity: 1 };
@@ -222,9 +230,9 @@ function Inventory({ user, setUser }) {
     return true;
   });
 
-  const totalPages = Math.ceil(filteredPokemons.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedPokemons = filteredPokemons.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(filteredPokemons.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedPokemons = filteredPokemons.slice(startIndex, startIndex + itemsPerPage);
 
   const goToPage = (page) => {
     setCurrentPage(Math.max(1, Math.min(page, totalPages)));
@@ -529,7 +537,8 @@ function Inventory({ user, setUser }) {
                         headers: { Authorization: localStorage.getItem('token') }
                       });
                     }
-                    toast.success(`Fed ${toFeed.length} item(s)! Total EXP gained: +${totalExp}`);
+                    const totalFedItems = toFeed.reduce((sum, f) => sum + f.quantity, 0);
+                    toast.success(`Fed ${totalFedItems} item(s)! Total EXP gained: +${totalExp}`);
                     await fetchInventory();
                     await refreshUser();
                     setShowFeedModal(false);

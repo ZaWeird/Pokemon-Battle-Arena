@@ -25,8 +25,6 @@ const TYPE_ICONS = {
   fairy: `${TYPE_ICON_BASE}/fairy.svg`,
 };
 
-const ITEMS_PER_PAGE = 60;
-
 function TeamBuilder({ user }) {
   const [pokemons, setPokemons] = useState([]);
   const [team, setTeam] = useState([]);
@@ -34,9 +32,20 @@ function TeamBuilder({ user }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(
+    window.innerWidth >= 960 ? 60 : 30
+  );
 
   useEffect(() => {
     fetchInventory();
+  }, []);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setItemsPerPage(window.innerWidth >= 960 ? 60 : 30);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const fetchInventory = async () => {
@@ -72,7 +81,7 @@ function TeamBuilder({ user }) {
 
   const saveTeam = async () => {
     try {
-      await axios.post('/api/team/save', 
+      await axios.post('/api/team/save',
         { team: team.map(p => p.id) },
         { headers: { Authorization: localStorage.getItem('token') } }
       );
@@ -83,7 +92,7 @@ function TeamBuilder({ user }) {
   };
 
   const getRarityClass = (rarity) => {
-    switch(rarity) {
+    switch (rarity) {
       case 'Common': return 'rarity-Common';
       case 'Rare': return 'rarity-Rare';
       case 'Epic': return 'rarity-Epic';
@@ -131,9 +140,9 @@ function TeamBuilder({ user }) {
   });
 
   // Pagination logic
-  const totalPages = Math.ceil(availablePokemons.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedPokemons = availablePokemons.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(availablePokemons.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedPokemons = availablePokemons.slice(startIndex, startIndex + itemsPerPage);
 
   const goToPage = (page) => {
     setCurrentPage(Math.max(1, Math.min(page, totalPages)));
@@ -218,8 +227,8 @@ function TeamBuilder({ user }) {
             <>
               <div className="inventory-grid">
                 {paginatedPokemons.map(pokemon => (
-                  <div 
-                    key={pokemon.id} 
+                  <div
+                    key={pokemon.id}
                     className={`pokemon-card inventory-card bg-${pokemon.rarity.toLowerCase()}`}
                     onClick={() => addToTeam(pokemon)}
                   >
@@ -252,15 +261,15 @@ function TeamBuilder({ user }) {
               {/* Pagination Controls */}
               {totalPages > 1 && (
                 <div className="pagination">
-                  <button 
-                    className="pagination-btn" 
+                  <button
+                    className="pagination-btn"
                     onClick={() => goToPage(1)}
                     disabled={currentPage === 1}
                   >
                     «
                   </button>
-                  <button 
-                    className="pagination-btn" 
+                  <button
+                    className="pagination-btn"
                     onClick={() => goToPage(currentPage - 1)}
                     disabled={currentPage === 1}
                   >
@@ -269,15 +278,15 @@ function TeamBuilder({ user }) {
                   <span className="pagination-info">
                     Page {currentPage} of {totalPages}
                   </span>
-                  <button 
-                    className="pagination-btn" 
+                  <button
+                    className="pagination-btn"
                     onClick={() => goToPage(currentPage + 1)}
                     disabled={currentPage === totalPages}
                   >
                     ›
                   </button>
-                  <button 
-                    className="pagination-btn" 
+                  <button
+                    className="pagination-btn"
                     onClick={() => goToPage(totalPages)}
                     disabled={currentPage === totalPages}
                   >

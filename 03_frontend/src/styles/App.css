@@ -1,8 +1,3 @@
-/* ============================================
-   POKÉMON GEN 3 (R/S/E) INSPIRED STYLESHEET
-   (Cleaned & Merged)
-   ============================================ */
-
 /* ---------- 1. CSS Variables & Reset ---------- */
 :root {
   --bg-dark: #103010;
@@ -113,8 +108,15 @@ body {
   display: block;
 }
 
+.nav-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
 .nav-menu {
   display: flex;
+  flex-wrap: nowrap;
   gap: 0.5rem;
 }
 
@@ -152,6 +154,7 @@ body {
   display: flex;
   align-items: center;
   gap: 0.8rem;
+  margin-top: 0.5rem;
 }
 
 .nav-user span {
@@ -633,7 +636,8 @@ body {
 
 .stage-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);   /* exactly 4 columns */
+  grid-template-columns: repeat(4, 1fr);
+  /* exactly 4 columns */
   gap: 0.8rem;
   margin: 1.5rem 0;
 }
@@ -649,19 +653,20 @@ body {
 
 .stage-card:hover {
   transform: translate(1px, 1px);
-  box-shadow: 
+  box-shadow:
     inset 2px 2px 0 #fff,
     inset -2px -2px 0 var(--shadow-color),
     2px 2px 0 var(--shadow-color);
 }
+
 .stage-card.pixel-box {
   background: var(--window-bg);
   border: 3px solid var(--window-border-dark);
-  box-shadow: 
+  box-shadow:
     inset 2px 2px 0 #fff,
     inset -2px -2px 0 var(--shadow-color),
     3px 3px 0 var(--shadow-color);
-  padding:0.8rem;
+  padding: 0.8rem;
   border-radius: 0;
 }
 
@@ -830,10 +835,10 @@ body {
 
 .rarity-and-types-compact {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
   margin-bottom: 0.5rem;
-  flex-wrap: wrap;
 }
 
 .rarity-and-types-compact .pokemon-rarity {
@@ -1213,6 +1218,7 @@ body {
   margin: 0 auto;
   display: block;
 }
+
 /* ---- Feed modal redesign ---- */
 .feed-item.pixel-box {
   display: flex;
@@ -1452,29 +1458,36 @@ body {
 .pixel-item-card.bg-legendary {
   background: #f0b030 !important;
 }
+
 /* Ultimate Candy – rainbow background */
 .pixel-item-card.bg-ultimate {
-  background: linear-gradient(
-    135deg,
-    #ff0000, #ff8800, #ffff00, #88ff00,
-    #00ff00, #00ff88, #00ffff, #0088ff,
-    #0000ff, #8800ff, #ff00ff, #ff0088
-  ) !important;
+  background: linear-gradient(135deg,
+      #ff0000, #ff8800, #ffff00, #88ff00,
+      #00ff00, #00ff88, #00ffff, #0088ff,
+      #0000ff, #8800ff, #ff00ff, #ff0088) !important;
   background-size: 200% 200% !important;
   animation: rainbowShift 3s ease infinite;
   border: 4px solid #d4a020 !important;
-  box-shadow: 
-    inset 3px 3px 0 rgba(255,255,255,0.5),
-    inset -3px -3px 0 rgba(0,0,0,0.3),
+  box-shadow:
+    inset 3px 3px 0 rgba(255, 255, 255, 0.5),
+    inset -3px -3px 0 rgba(0, 0, 0, 0.3),
     4px 4px 0 var(--shadow-color) !important;
   color: #fff;
   text-shadow: 1px 1px 0 #000;
 }
 
 @keyframes rainbowShift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 /* Keep text readable on rainbow background */
@@ -1489,7 +1502,7 @@ body {
 .bg-ultimate .buy-btn.pixel-btn {
   background: #d4a020;
   border-color: #a07010;
-  box-shadow: 
+  box-shadow:
     inset 2px 2px 0 #ffe080,
     inset -2px -2px 0 #805010,
     3px 3px 0 var(--shadow-color);
@@ -1573,6 +1586,12 @@ body {
   font-size: 0.9rem;
 }
 
+.pixel-header>div,
+.pixel-row>div {
+  text-align: center;
+  border-right: 1px solid var(--window-border-light);
+}
+
 /* ---------- 13. Battle Arena ---------- */
 .battle-arena {
   background: #183820;
@@ -1646,8 +1665,8 @@ body {
 /* Sprites */
 .opponent-sprite-container,
 .player-sprite-container {
-  width: 240px;
-  height: 240px;
+  width: 300px;
+  height: 300px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1835,13 +1854,11 @@ body {
   padding: 1rem;
   border-radius: 0;
   height: 250px;
-  /* fixed height prevents shifting */
 }
 
 .battle-log.pixel-box {
   flex: 1;
   max-height: 100%;
-  /* fill the row height */
   overflow-y: auto;
   background: #182018;
   border: 4px solid #306030 !important;
@@ -1959,6 +1976,7 @@ body {
   padding: 0.5rem 1.5rem;
   z-index: 100;
 }
+
 /* Opponent left group: info box + team list stacked */
 .opponent-left-group {
   display: flex;
@@ -1975,18 +1993,11 @@ body {
   align-items: center;
 }
 
-/* Sprites can now be larger */
-.opponent-sprite-container,
-.player-sprite-container {
-  width: 300px;
-  height: 300px;
-}
-
 /* Keep team list width within the column */
 .opponent-team-list.pixel-box,
 .player-team-list.pixel-box {
   width: 100%;
-  max-width: 260px;   /* matches info box width */
+  max-width: 260px;
 }
 
 /* ---------- 14. Modals (Shared) ---------- */
@@ -2333,4 +2344,179 @@ body.modal-open {
 
 .in-team {
   border: 3px solid #10b981;
+}
+
+/* ---------- MEDIUM SCREEN (960px – 1365px) ---------- */
+@media (min-width: 960px) and (max-width: 1365px) {
+  .navbar {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+  }
+
+  .nav-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+
+  .nav-menu {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    width: 420px;
+    /* enough for 3 buttons per row */
+  }
+
+  .nav-menu a {
+    font-size: 0.6rem;
+    padding: 0.5rem 0.8rem;
+  }
+
+  .nav-user {
+    margin-top: 0.5rem;
+  }
+}
+
+/* ---------- SMALL SCREEN (<960px) ---------- */
+@media (max-width: 959px) {
+  .navbar {
+    flex-wrap: wrap;
+    justify-content: space-between;
+  }
+
+  .nav-right {
+    display: contents;
+  }
+
+  .nav-brand {
+    order: 0;
+  }
+
+  .nav-menu {
+    order: 1;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.4rem;
+    width: 100%;
+    max-width: calc(100% - 160px);
+  }
+
+  .nav-menu a {
+    font-size: 0.55rem;
+    padding: 0.4rem 0.6rem;
+  }
+
+  .nav-user {
+    order: 2;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+
+  /* Leaderboard header – smaller text on small screens */
+  .pixel-header {
+    font-size: 0.3rem;
+    padding: 0.6rem 0.2rem;
+  }
+
+  .pixel-row {
+    font-size: 0.85rem;
+  }
+
+  .pixel-row.rank-1 .rank,
+  .pixel-row.rank-2 .rank,
+  .pixel-row.rank-3 .rank {
+    font-size: 0.5rem;
+  }
+
+  /* Small screen: remove extra right margin / padding */
+  .container {
+    width: 100%;
+    padding: 0 0.5rem;
+    margin: 1rem auto;
+  }
+
+  .card {
+    padding: 1rem 0.5rem;
+    margin-right: 0;
+  }
+
+  .inventory-grid,
+  .items-grid {
+    gap: 0.5rem;
+    margin-right: 0;
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .inventory-card,
+  .pixel-item-card {
+    margin-right: 0;
+  }
+
+  .stage-grid {
+    grid-template-columns: repeat(2, 160px);
+    gap: 1rem;
+    justify-content: center;
+  }
+
+  .stage-card {
+    width: 160px;
+    margin: 0;
+    padding: 0.6rem !important;
+  }
+
+  .stage-info {
+    width: 100%;
+    text-align: center;
+  }
+
+  .stage-name {
+    font-size: 0.65rem;
+    word-break: break-word;
+  }
+
+  .opponent-row,
+  .player-row {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .opponent-left-group,
+  .opponent-right-group,
+  .player-left-group,
+  .player-right-group {
+    width: 100%;
+    max-width: 260px;
+    align-items: center;
+  }
+
+  .opponent-sprite-container,
+  .player-sprite-container {
+    width: 200px;
+    height: 200px;
+    margin: 0.5rem 0;
+  }
+
+  .battle-bottom-row {
+    flex-direction: column;
+    height: auto;
+    min-height: 0;
+    gap: 1rem;
+  }
+
+  .command-menu.pixel-box,
+  .move-selection.pixel-box {
+    height: auto;
+    min-height: 160px;
+  }
+
+  .battle-log.pixel-box {
+    max-height: 160px;
+  }
 }

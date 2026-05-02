@@ -43,7 +43,7 @@ function Leaderboard() {
             <div>Trainer</div>
             <div>Wins</div>
             <div>Losses</div>
-            <div>Win Rate</div>
+            <div>Winrate</div>
             <div>Pokémon</div>
           </div>
           

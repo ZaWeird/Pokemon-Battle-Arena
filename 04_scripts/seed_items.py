@@ -7,10 +7,10 @@ DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), '01_database'
 
 # Updated item definitions
 items = [
-    ('Small EXP Candy',   'Gives 300 EXP to a Pokémon',           'exp_candy', 300,   30),
-    ('Medium EXP Candy',  'Gives 900 EXP to a Pokémon',           'exp_candy', 900,   80),
-    ('Large EXP Candy',   'Gives 2400 EXP to a Pokémon',          'exp_candy', 2400, 200),
-    ('Ultimate EXP Candy','The ultimate exp candy! Gives 6400 EXP to a Pokémon', 'exp_candy', 6400, 500),
+    ('Small EXP Candy',   'Gives 150 EXP to a Pokémon',           'exp_candy', 150,   30),
+    ('Medium EXP Candy',  'Gives 450 EXP to a Pokémon',           'exp_candy', 450,   80),
+    ('Large EXP Candy',   'Gives 1200 EXP to a Pokémon',          'exp_candy', 1200, 200),
+    ('Ultimate EXP Candy','The ultimate exp candy! Gives 3200 EXP to a Pokémon', 'exp_candy', 3200, 500),
 ]
 
 conn = sqlite3.connect(DB_PATH)
@@ -43,12 +43,10 @@ cursor.execute("""
 # 3. Delete all items that are NOT the ones we want (old descriptions)
 cursor.execute("""
     DELETE FROM items
-    WHERE description LIKE '%50 EXP%'
-       OR description LIKE '%150 EXP%'
-       OR description LIKE '%400 EXP%'
-       OR description LIKE '%Gives 300 EXP%'
-       OR description LIKE '%Gives 900 EXP%'
-       OR description LIKE '%Gives 2400 EXP%'
+    WHERE description LIKE '%Gives 150 EXP%'
+       OR description LIKE '%Gives 450 EXP%'
+       OR description LIKE '%Gives 1200 EXP%'
+       OR description LIKE '%Gives 3200 EXP%'
        OR name NOT IN ('Small EXP Candy','Medium EXP Candy','Large EXP Candy','Ultimate EXP Candy')
 """)
 
