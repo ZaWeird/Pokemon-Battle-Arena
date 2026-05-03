@@ -123,8 +123,6 @@ class GachaHistory(Base):
     summon_type = Column(String(10), default='single')
     summoned_at = Column(DateTime, default=datetime.utcnow)
 
-# ========== NEW MODELS for Shop & Items ==========
-
 class Item(Base):
     __tablename__ = 'items'
     

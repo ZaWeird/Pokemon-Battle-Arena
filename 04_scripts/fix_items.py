@@ -1,4 +1,3 @@
-# cleanup_and_seed_items.py
 import sqlite3
 import os
 

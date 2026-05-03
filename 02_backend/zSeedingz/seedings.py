@@ -1,17 +1,13 @@
-# 02_backend/reseed.py
+# 02_backend/seedings.py
 import sqlite3
 import os
 import requests
 import time
 import json
 
-# Database path
 DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), '01_database', 'pokemon_battle.db')
 POKEAPI_BASE = "https://pokeapi.co/api/v2"
 
-# ------------------------------------------------------------
-# Helper functions
-# ------------------------------------------------------------
 def fetch_with_retry(url, max_retries=3):
     for attempt in range(max_retries):
         try:
@@ -50,7 +46,6 @@ def fetch_pokemon_data(poke_id):
     types = get_type_string(data['types'])
     image_url = data['sprites']['other']['official-artwork']['front_default'] or data['sprites']['front_default']
 
-    # Get level‑up moves
     level_up_moves = {}
     for move_data in data['moves']:
         for detail in move_data['version_group_details']:
@@ -83,10 +78,8 @@ def fetch_move_data(move_name):
     if not data:
         return None
 
-    # Parse stat changes
     stat_changes = json.dumps([{'stat': c['stat']['name'], 'change': c['change']} for c in data.get('stat_changes', [])])
 
-    # Meta object (may be None for some moves like Struggle)
     meta = data.get('meta')
     if meta is None:
         meta = {}
@@ -110,16 +103,16 @@ def fetch_move_data(move_name):
         'crit_rate': meta.get('crit_rate', 0)
     }
 
-def seed_all():
+def seed_pokemon_and_moves():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
-    # Clear tables
+    # Clear existing pokemon/move data
     cursor.execute("DELETE FROM pokemon_moves")
     cursor.execute("DELETE FROM moves")
     cursor.execute("DELETE FROM pokemons")
     conn.commit()
-    print("Cleared existing data.")
+    print("Cleared existing Pokémon and move data.")
 
     for poke_id in range(1, 152):
         print(f"Processing #{poke_id}...", end=" ")
@@ -128,7 +121,6 @@ def seed_all():
             print("FAILED (no data)")
             continue
 
-        # Insert Pokemon
         cursor.execute("""
             INSERT INTO pokemons (
                 pokeapi_id, name, type, hp, attack, defense,
@@ -144,10 +136,8 @@ def seed_all():
         ))
         pokemon_db_id = cursor.lastrowid
 
-        # Insert moves and links
         move_count = 0
         for move_name, learn_level in pokemon['level_up_moves'].items():
-            # Check if move already exists
             cursor.execute("SELECT id FROM moves WHERE name = ?", (move_name,))
             row = cursor.fetchone()
             if row:
@@ -155,7 +145,6 @@ def seed_all():
             else:
                 move_data = fetch_move_data(move_name)
                 if not move_data:
-                    print(f"  WARNING: Could not fetch move {move_name}")
                     continue
                 cursor.execute("""
                     INSERT INTO moves (
@@ -176,7 +165,6 @@ def seed_all():
                 move_id = cursor.lastrowid
                 move_count += 1
 
-            # Insert Pokémon‑Move link
             cursor.execute("""
                 INSERT INTO pokemon_moves (pokemon_id, move_id, learn_level)
                 VALUES (?, ?, ?)
@@ -184,10 +172,61 @@ def seed_all():
 
         conn.commit()
         print(f"OK (moves: {len(pokemon['level_up_moves'])})")
-        time.sleep(0.1)  # be nice to the API
+        time.sleep(0.1)
 
     conn.close()
-    print("\nSeeding complete!")
+    print("Pokémon and moves seeding complete!")
+
+ITEMS = [
+    ('Small EXP Candy',   'Gives 150 EXP to a Pokémon',           'exp_candy', 150,   30),
+    ('Medium EXP Candy',  'Gives 450 EXP to a Pokémon',           'exp_candy', 450,   80),
+    ('Large EXP Candy',   'Gives 1200 EXP to a Pokémon',          'exp_candy', 1200, 200),
+    ('Ultimate EXP Candy','The ultimate exp candy! Gives 3200 EXP to a Pokémon', 'exp_candy', 3200, 500),
+]
+
+def seed_items():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    # Ensure tables exist (in case they weren't in schema.sql)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS items (
+            id INTEGER PRIMARY KEY,
+            name TEXT UNIQUE,
+            description TEXT,
+            item_type TEXT,
+            exp_value INTEGER,
+            price INTEGER
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS user_items (
+            id INTEGER PRIMARY KEY,
+            user_id INTEGER,
+            item_id INTEGER,
+            quantity INTEGER,
+            FOREIGN KEY(user_id) REFERENCES users(id),
+            FOREIGN KEY(item_id) REFERENCES items(id)
+        )
+    """)
+
+    # Clear and reseed
+    cursor.execute("DELETE FROM items")
+    for item in ITEMS:
+        cursor.execute(
+            "INSERT OR REPLACE INTO items (name, description, item_type, exp_value, price) VALUES (?,?,?,?,?)",
+            item
+        )
+
+    conn.commit()
+    conn.close()
+    print("Shop items seeded!")
+
+def seed_all():
+    print("=== Starting full database seeding ===")
+    seed_pokemon_and_moves()
+    seed_items()
+    print("=== All seeding complete! ===")
 
 if __name__ == '__main__':
     seed_all()

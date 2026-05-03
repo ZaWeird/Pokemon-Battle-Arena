@@ -9,6 +9,9 @@ from models import Base
 from routers import auth, gacha, inventory, team, leaderboard, battle, shop, user
 from services.battle_service import handle_join_battle as join_handler, make_ai_move
 from services.battle_service import handle_battle_action
+import os
+import sqlite3
+from zSeedingz.seedings import seed_all
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = Config.SECRET_KEY
@@ -16,6 +19,44 @@ CORS(app, supports_credentials=True)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 # Create database tables
+def initialize_database():
+    """Create database from schema and seed it if it's empty."""
+    # Compute the absolute path to the same DB used everywhere
+    db_path = os.path.join(os.path.dirname(__file__), '..', '01_database', 'pokemon_battle.db')
+    db_path = os.path.abspath(db_path)
+
+    need_seed = False
+    if not os.path.exists(db_path):
+        need_seed = True
+    else:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='pokemons'")
+        table_exists = cursor.fetchone()
+        if not table_exists:
+            need_seed = True
+        else:
+            cursor.execute("SELECT COUNT(*) FROM pokemons")
+            count = cursor.fetchone()[0]
+            need_seed = (count == 0)
+        conn.close()
+
+    if need_seed:
+        print("Database empty or missing – setting up for the first time...")
+        # Run schema.sql
+        schema_path = os.path.join(os.path.dirname(__file__), '..', '01_database', 'schema.sql')
+        schema_path = os.path.abspath(schema_path)
+        with open(schema_path, 'r') as f:
+            schema_sql = f.read()
+        conn = sqlite3.connect(db_path)
+        conn.executescript(schema_sql)
+        conn.close()
+
+        # Seed Pokémon, moves, and items
+        seed_all()
+        print("Initial database setup complete.")
+
+#Fallback in case of any issues with the above seeding logic
 Base.metadata.create_all(bind=engine)
 
 # Register blueprints
@@ -77,6 +118,7 @@ def default_error_handler(e):
     print(f"Socket error: {e}")
 
 if __name__ == '__main__':
+    initialize_database()
     print("=" * 50)
     print("Pokemon Battle Arena - Backend Server")
     print("=" * 50)

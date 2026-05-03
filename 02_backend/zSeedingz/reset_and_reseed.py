@@ -11,8 +11,5 @@ with app.app_context():
     db.session.commit()
     print("Database cleared.")
 
-    from services.pokeapi_service import fetch_and_seed_gen1
-    print("Starting full Gen 1 seeding (including moves)...")
-    print("This will take 5-10 minutes.")
-    added, failed = fetch_and_seed_gen1()
-    print(f"Seeding complete. Added {len(added)} Pokémon, failed: {len(failed)}")
+    from seedings import seed_all
+    seed_all()

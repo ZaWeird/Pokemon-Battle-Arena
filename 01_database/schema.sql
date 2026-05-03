@@ -103,3 +103,23 @@ CREATE TABLE IF NOT EXISTS gacha_history (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (pokemon_id) REFERENCES pokemons(id) ON DELETE CASCADE
 );
+
+-- Shop items
+CREATE TABLE IF NOT EXISTS items (
+    id INTEGER PRIMARY KEY,
+    name TEXT UNIQUE,
+    description TEXT,
+    item_type TEXT,
+    exp_value INTEGER,
+    price INTEGER
+);
+
+-- User's purchased items
+CREATE TABLE IF NOT EXISTS user_items (
+    id INTEGER PRIMARY KEY,
+    user_id INTEGER,
+    item_id INTEGER,
+    quantity INTEGER,
+    FOREIGN KEY(user_id) REFERENCES users(id),
+    FOREIGN KEY(item_id) REFERENCES items(id)
+);
