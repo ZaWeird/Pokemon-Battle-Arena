@@ -18,7 +18,9 @@ yarn-error.log*
 .idea/
 
 # Virtual environment
+02_backend/.venv/
 venv/
+.env
 
 # Python cache
 __pycache__/

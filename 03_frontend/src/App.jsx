@@ -9,6 +9,7 @@ import Battle from './components/Battle'
 import Lobby from './components/Lobby'
 import Leaderboard from './components/Leaderboard'
 import Shop from './components/Shop'
+import ChatWidget from './components/ChatWidget'
 
 function AppContent() {
   const [user, setUser] = useState(null)
@@ -79,6 +80,9 @@ function AppContent() {
           <Route path="/leaderboard" element={user ? <Leaderboard /> : <Navigate to="/" />} />
         </Routes>
       </div>
+
+      {/* Tazuna88 Chat Guide Widget — visible on all pages when logged in, except battles */}
+      {user && !isBattlePage && <ChatWidget />}
     </div>
   )
 }

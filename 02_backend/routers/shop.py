@@ -11,14 +11,17 @@ router = Blueprint('shop', __name__, url_prefix='/api')
 @router.route('/shop/items', methods=['GET'])
 def get_shop_items():
     db = next(get_db())
-    items = db.query(Item).all()
-    return jsonify([{
-        'id': i.id,
-        'name': i.name,
-        'description': i.description,
-        'price': i.price,
-        'exp_value': i.exp_value
-    } for i in items])
+    try:
+        items = db.query(Item).all()
+        return jsonify([{
+            'id': i.id,
+            'name': i.name,
+            'description': i.description,
+            'price': i.price,
+            'exp_value': i.exp_value
+        } for i in items])
+    finally:
+        db.close()
 
 @router.route('/shop/buy', methods=['POST'])
 def buy_item():
@@ -39,27 +42,30 @@ def buy_item():
     quantity = req.get('quantity', 1)
 
     db = next(get_db())
-    user = db.query(User).filter_by(id=user_id).first()
-    item = db.query(Item).filter_by(id=item_id).first()
+    try:
+        user = db.query(User).filter_by(id=user_id).first()
+        item = db.query(Item).filter_by(id=item_id).first()
 
-    if not item:
-        return jsonify({'message': 'Item not found'}), 404
+        if not item:
+            return jsonify({'message': 'Item not found'}), 404
 
-    total_cost = item.price * quantity
-    if user.coins < total_cost:
-        return jsonify({'message': 'Not enough coins'}), 400
+        total_cost = item.price * quantity
+        if user.coins < total_cost:
+            return jsonify({'message': 'Not enough coins'}), 400
 
-    user.coins -= total_cost
+        user.coins -= total_cost
 
-    user_item = db.query(UserItem).filter_by(user_id=user_id, item_id=item_id).first()
-    if user_item:
-        user_item.quantity += quantity
-    else:
-        user_item = UserItem(user_id=user_id, item_id=item_id, quantity=quantity)
-        db.add(user_item)
+        user_item = db.query(UserItem).filter_by(user_id=user_id, item_id=item_id).first()
+        if user_item:
+            user_item.quantity += quantity
+        else:
+            user_item = UserItem(user_id=user_id, item_id=item_id, quantity=quantity)
+            db.add(user_item)
 
-    db.commit()
-    return jsonify({'message': f'Bought {quantity}x {item.name}', 'new_balance': user.coins})
+        db.commit()
+        return jsonify({'message': f'Bought {quantity}x {item.name}', 'new_balance': user.coins})
+    finally:
+        db.close()
 
 @router.route('/feed', methods=['POST'])
 def feed_pokemon():
@@ -122,7 +128,9 @@ def feed_pokemon():
     # Update HP if current HP is zero? Not needed; stats updated.
     user_pokemon.xp = new_exp
     user_item.quantity -= quantity
-    if user_item.quantity == 0:
+    remaining_qty = user_item.quantity
+    if remaining_qty <= 0:
+        remaining_qty = 0
         db.delete(user_item)
     db.commit()
 
@@ -131,5 +139,5 @@ def feed_pokemon():
         'new_level': user_pokemon.level,
         'level_up_messages': level_up_messages,
         'new_exp': user_pokemon.xp,
-        'remaining_quantity': user_item.quantity if user_item.quantity > 0 else 0
+        'remaining_quantity': remaining_qty
     })

@@ -18,9 +18,9 @@ def create_admin():
     
     # Create new admin
     cursor.execute("""
-        INSERT INTO users (username, email, password_hash, coins, wins, losses, rank, rating)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    """, ('admin', 'admin@pokemon.com', password_hash, 9999999999, 0, 0, 'Admin', 9999))
+        INSERT INTO users (username, email, password_hash, coins, wins, losses, rank)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, ('admin', 'admin@pokemon.com', password_hash, 9999999999, 0, 0, 'Admin'))
     
     conn.commit()
     conn.close()

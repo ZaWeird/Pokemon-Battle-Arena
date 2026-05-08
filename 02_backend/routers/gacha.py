@@ -4,7 +4,7 @@ import sqlite3
 import random
 import os
 from services.auth_utils import verify_token
-from dependencies import get_db
+
 router = Blueprint('gacha', __name__, url_prefix='/api')
 
 DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), '01_database', 'pokemon_battle.db')

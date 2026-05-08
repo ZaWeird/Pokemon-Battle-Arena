@@ -5,6 +5,7 @@ from . import experience_service
 from . import move_accuracy_service
 from . import pokeapi_service
 from . import auth_utils
+from . import chat_service
 
 __all__ = [
     'battle_service',
@@ -12,5 +13,6 @@ __all__ = [
     'experience_service',
     'move_accuracy_service',
     'pokeapi_service',
-    'auth_utils'
+    'auth_utils',
+    'chat_service'
 ]

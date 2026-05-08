@@ -454,7 +454,7 @@ def make_ai_move(room, socketio, active_battles):
                 db.close()
 
             # Coin reward on loss: 40% of opponent level, minimum 1
-            coins_lost = current_ai_pokemon['level'] * 0.4
+            coins_lost = max(1, int(current_ai_pokemon['level'] * 0.4))
 
             db = next(get_db())
             try:

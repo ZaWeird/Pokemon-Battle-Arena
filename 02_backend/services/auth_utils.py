@@ -5,6 +5,8 @@ from flask import request, jsonify
 
 def verify_token(token):
     try:
+        if token and token.startswith('Bearer '):
+            token = token[7:]
         payload = jwt.decode(token, Config.JWT_SECRET_KEY, algorithms=['HS256'])
         return payload.get('user_id')
     except:

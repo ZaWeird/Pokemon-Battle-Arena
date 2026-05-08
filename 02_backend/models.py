@@ -1,6 +1,6 @@
 # 02_backend/models.py
 from sqlalchemy import Column, Integer, String, Boolean, Text, ForeignKey, DateTime
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import bcrypt
@@ -90,9 +90,6 @@ class Move(Base):
     max_hits = Column(Integer, default=1)
     crit_rate = Column(Integer, default=0)
 
-pokemon = relationship('Pokemon', backref='pokemon_moves')
-move = relationship('Move', backref='pokemon_moves')
-
 class PokemonMove(Base):
     __tablename__ = 'pokemon_moves'
     
@@ -100,6 +97,9 @@ class PokemonMove(Base):
     pokemon_id = Column(Integer, ForeignKey('pokemons.id'), nullable=False)
     move_id = Column(Integer, ForeignKey('moves.id'), nullable=False)
     learn_level = Column(Integer, nullable=False)
+
+    pokemon = relationship('Pokemon', backref='pokemon_moves')
+    move = relationship('Move', backref='move_links')
 
 class Battle(Base):
     __tablename__ = 'battles'

@@ -3,15 +3,14 @@ from flask import Flask, request
 from flask_cors import CORS
 from flask_socketio import SocketIO, join_room, emit
 from config import Config
-from database import socketio
 from dependencies import engine, get_db
 from models import Base
-from routers import auth, gacha, inventory, team, leaderboard, battle, shop, user
+from routers import auth, gacha, inventory, team, leaderboard, battle, shop, user, chat
 from services.battle_service import handle_join_battle as join_handler, make_ai_move
 from services.battle_service import handle_battle_action
 import os
 import sqlite3
-from zSeedingz.seedings import seed_all
+from seedings import seed_all
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = Config.SECRET_KEY
@@ -68,6 +67,7 @@ app.register_blueprint(leaderboard.router)
 app.register_blueprint(battle.router)
 app.register_blueprint(shop.router)
 app.register_blueprint(user.router)
+app.register_blueprint(chat.router)
 
 # Active battles storage
 active_battles = {}
