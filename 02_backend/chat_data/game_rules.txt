@@ -1,0 +1,74 @@
+# Pokémon Battle Arena – Game Rules
+
+## Gacha System
+- Single summon costs 100 coins.
+- 10x summon costs 900 coins (10% discount).
+- Rarity probabilities: Common 60%, Rare 25%, Epic 10%, Legendary 5%.
+- All summoned Pokémon start at level 1.
+
+## Battle System
+- Battles are turn‑based, 3 vs 3.
+- The Pokémon with higher Speed attacks first.
+- Damage formula: depends on attacker’s ATK (or Special for special moves) and defender’s DEF (or Special), move power, type effectiveness, STAB, and level.
+- Some of the movements cause effects to opponent Pokémon(s), but the feature is not yet implemented.
+- Type effectiveness: super effective (2×), not very effective (0.5×), immune (0×). STAB (Same Type Attack Bonus) gives 1.5× damage.
+- Type effects against each others are the same as Gen 1 Pokémon.
+- If a Pokémon faints, the next one is sent out automatically. You can also switch Pokémon by pressing on their icon in Your Team menu.
+- Winning a battle awards coins equal to the last opponent’s level. Losing awards 40% of that level (minimum 1 coin).
+- EXP is awarded after the battle ends. Each team Pokémon receives EXP from every defeated opponent: state × opponent_level × rarity_base_exp, where state = 2 if alive, 1 if fainted; rarity_base_exp: Common=4, Rare=8, Epic=16, Legendary=24. Additionally, a flat bonus: +64 EXP for a win, +32 EXP for a loss.
+
+## EXP and Leveling
+- EXP thresholds follow Gen 1 scaling (e.g., level 2 requires 8 EXP, level 100 requires 285,012 EXP).
+- Leveling up recalculates stats using Gen 1 formulas: HP = floor( (baseHP*2*level)/100 ) + level + 10, other stats = floor( (baseStat*2*level)/100 ) + 5.
+- Beside from battle gains, feeding EXP candies from the shop also grants EXP and can trigger level‑ups.
+
+## Shop Items
+Currently only have items to increase Pokémon EXP, other items with more functions are planned to be added in the future.
+- Small EXP Candy: +150 EXP, 30 coins.
+- Medium EXP Candy: +450 EXP, 80 coins.
+- Large EXP Candy: +1200 EXP, 200 coins.
+- Ultimate EXP Candy: +3200 EXP, 500 coins (rainbow‑colored ones).
+
+## PvE Stages
+Each stage contain 3 random opponent Pokémon: 
+- Stage 1 – Tiny Path: level 5 opponents.
+- Stage 2 – Grass Challenge: level 10 opponents.
+- Stage 3 – Stone Badge: level 20 opponents.
+- Stage 4 – Heat Badge: level 30 opponents.
+- Stage 5 – Balance Badge: level 40 opponents.
+- Stage 6 – Rainbow Badge: level 50 opponents.
+- Stage 7 - Soul Badge: level 60 opponents.
+- Stage 8 - Marsh Badge: level 70 opponents.
+- Stage 9 - Volcan Badge: level 80 opponents.
+- Stage 10 - Earth Badge: level 90 opponents.
+
+## Team Building
+- You can add Pokémon to your team just by clicking on their card, the press "save team".
+- Up to 3 Pokémon can be in a team. Minimum of 1 is required to start a battle.
+- Team is used in PvE and PvP battles.
+
+## Inventory
+- Shows all owned Pokémon with stats (HP, ATK, DEF, Special, Speed) and level.
+- Pokémon can be released for coins (rarity‑based).
+- The last Pokémon or team Pokémon cannot be released.
+- Pagination: 60 Pokémon per page on large screens, 30 on small screens.
+- You can search for Pokémon by their name and filter them based on types.
+
+## Leaderboard
+- Ranks players by total wins (descending).
+- Displays rank, username, wins, losses, win rate, Pokémon count.
+- Top 3 players are highlighted with gold, silver, bronze background colors.
+
+## Coins
+- New accounts start with 500 coins.
+- Earned by winning battles and releasing Pokémon.
+- You can spend coins on Gacha and Shop items.
+
+## Lobby
+- Main hub: start PvE battle, view player info.
+- Choose a stage before battle.
+
+## General
+- The game is a web application with a pixel‑art inspired UI.
+- Backend: Flask + Socket.IO + SQLite. Frontend: React + Vite.
+- Real‑time communication for battles.

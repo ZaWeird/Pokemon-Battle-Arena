@@ -25,3 +25,7 @@ venv/
 # Python cache
 __pycache__/
 *.pyc
+
+# Misc
+knowledge_chunks.txt
+02_backend/chat_data/chroma_store/

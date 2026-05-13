@@ -1,19 +1,17 @@
 # services/chat_service.py
 """Tazuna88 Chat Service — Gemini-powered Pokemon Battle Arena guide
-with rule-based fallback when the API is unavailable."""
+with rule-based fallback and RAG for accurate game info."""
 
 import random
-import time
+import os
 
 from config import Config
 
 # ---------- Gemini client (lazy, graceful) ----------
 _gemini_client = None
-_gemini_available = True  # flipped to False after first connection failure
+_gemini_available = True   # becomes False after first fatal error (rate limit)
 
 def _get_gemini_client():
-    """Lazily initialise the Gemini client so the app still boots
-    even when the package or key is missing."""
     global _gemini_client, _gemini_available
     if _gemini_client is not None:
         return _gemini_client
@@ -24,7 +22,6 @@ def _get_gemini_client():
             print("[Tazuna88] No GEMINI_API_KEY set — running in fallback mode.")
             _gemini_available = False
             return None
-        
         _gemini_client = genai.Client(api_key=key)
         return _gemini_client
     except Exception as e:
@@ -32,37 +29,92 @@ def _get_gemini_client():
         _gemini_available = False
         return None
 
-
 # ---------- In-memory conversation storage ----------
 _conversations = {}
 
-# ---------- System prompt (shared with Gemini path) ----------
+# ---------- System prompt ----------
 SYSTEM_PROMPT = (
     "You are Tazuna88, a concise Pokémon Battle Arena guide. "
     "ONLY answer game questions (battles, gacha, team, shop, PvE/PvP). "
     "Decline off-topic questions politely. "
     "Game: Gacha summons (Common/Rare/Epic/Legendary), team of 3, turn-based battles, "
-    "type matchups (2x/0.5x/0x), STAB 1.5x, 10 PvE stages, PvP in Lobby, "
-    "Exp Candies from Shop to level up."
+    "Type matchups (2x/0.5x/0x), STAB 1.5x, 10 PvE stages, PvP in Lobby, "
+    "Exp Candies from Shop to level up. "
     "Use ★ and ▶ occasionally."
 )
 
+# ---------- Game-related keywords ----------
+_GAME_KEYWORDS = [
+    'gacha', 'summon', 'battle', 'fight', 'team', 'shop', 'candy',
+    'exp', 'level', 'coin', 'type', 'effective', 'stab', 'damage',
+    'speed', 'pve', 'pvp', 'stage', 'inventory', 'leaderboard',
+    'lobby', 'move', 'stat', 'rarity', 'pokemon', 'pokémon',
+    'dragon', 'ice', 'fire', 'water', 'grass', 'electric',   # common type names
+    'weak', 'strong', 'element', 'super effective', 'not very effective'
+]
+
+def _is_game_related(message: str) -> bool:
+    lowered = message.lower()
+    return any(kw in lowered for kw in _GAME_KEYWORDS)
+
+# ---------- RAG retrieval ----------
+import chromadb
+from google import genai as genai_module
+
+def _get_rag_context(query: str) -> str:
+    """Try to get relevant game rule chunks from Chroma. Returns empty string on any failure."""
+    try:
+        chroma_path = os.path.join(
+            os.path.dirname(__file__), '..', 'chat_data', 'chroma_store'
+        )
+        client = chromadb.PersistentClient(path=chroma_path)
+        collection = client.get_collection("game_rules")
+
+        key = Config.GEMINI_API_KEY
+        if not key:
+            return ""
+        gemini_client = genai_module.Client(api_key=key)
+        embed_result = gemini_client.models.embed_content(
+            model='models/gemini-embedding-001',
+            contents=[query],
+        )
+        if not embed_result.embeddings or len(embed_result.embeddings) == 0:
+            return ""
+        query_embedding = embed_result.embeddings[0].values
+
+        results = collection.query(
+            query_embeddings=[query_embedding],
+            n_results=3
+        )
+        if results['documents'] and results['documents'][0]:
+            return "\n\n".join(results['documents'][0])
+    except Exception as e:
+        print(f"[Tazuna88] RAG retrieval error: {e}")
+    return ""
 
 # =====================================================================
 #  RULE-BASED FALLBACK CHAT  (activates when Gemini is unreachable)
 # =====================================================================
 
-# Each rule is a tuple: (list_of_keywords, list_of_possible_responses)
-# The first rule whose keywords ALL appear in the lowered message wins.
-# Responses are picked at random for variety.
-
 _FALLBACK_RULES = [
-    # --- Type matchups ---
+    # --- Broader type/effectiveness catch-all (NEW) ---
+    (["type", "effect"], [
+        "★ Type effectiveness: attacks can be super effective (2x), not very effective (0.5x), or immune (0x). Match your moves to your opponent's weakness!",
+        "▶ Types matter! Check your opponent's type and use moves that are super effective against it. Your Pokémon's own type may also give STAB bonus!",
+    ]),
+    (["super", "effective"], [
+        "★ Super effective moves deal double damage! Use type matchups to find the right counter. For example, Water beats Fire, Fire beats Grass, Grass beats Water. ♦",
+    ]),
+    (["element", "damage"], [
+        "★ The element (type) of your move determines how much damage it deals. Look for type weaknesses - e.g., Electric is strong against Water but weak to Ground.",
+    ]),
+
+    # --- Type matchups (original) ---
     (
         ["type", "matchup"],
         [
-            "★ Type matchups follow classic Pokémon rules! Fire beats Grass, Grass beats Water, Water beats Fire. Super effective = 2× damage, not very effective = 0.5×, immune = 0×. Build your team with good type coverage, Trainer!",
-            "▶ Here's a quick tip: always check your opponent's types before battle! Super effective moves deal 2× damage. STAB (Same Type Attack Bonus) adds another 1.5× if the move matches your Pokémon's type. ★",
+            "★ Type matchups follow classic Pokémon rules! Fire beats Grass, Grass beats Water, Water beats Fire. Super effective = 2x damage, not very effective = 0.5x, immune = 0x. Build your team with good type coverage, Trainer!",
+            "▶ Here's a quick tip: always check your opponent's types before battle! Super effective moves deal 2x damage. STAB (Same Type Attack Bonus) adds another 1.5x if the move matches your Pokémon's type. ★",
         ],
     ),
     (
@@ -103,7 +155,7 @@ _FALLBACK_RULES = [
     (
         ["battle", "strateg"],
         [
-            "★ Here are my top battle tips: 1) Build a team with good type coverage. 2) Level up your Pokémon with Exp Candies. 3) Pay attention to Speed — the faster Pokémon attacks first. 4) Use STAB moves for 1.5× bonus damage!",
+            "★ Here are my top battle tips: 1) Build a team with good type coverage. 2) Level up your Pokémon with Exp Candies. 3) Pay attention to Speed — the faster Pokémon attacks first. 4) Use STAB moves for 1.5x bonus damage!",
             "▶ Strategy time! Speed determines turn order, so fast Pokémon get a big advantage. Pair that with super effective STAB moves and you'll be crushing stages in no time! ★",
         ],
     ),
@@ -235,13 +287,13 @@ _FALLBACK_RULES = [
     (
         ["damage"],
         [
-            "★ Damage is calculated using the attacker's ATK (or SPA for special moves), defender's DEF (or SPD), move power, type effectiveness, STAB (1.5× if the move matches the Pokémon's type), and level. Stack those bonuses for maximum impact!",
+            "★ Damage is calculated using the attacker's ATK (or SPA for special moves), defender's DEF (or SPD), move power, type effectiveness, STAB (1.5x if the move matches the Pokémon's type), and level. Stack those bonuses for maximum impact!",
         ],
     ),
     (
         ["stab"],
         [
-            "★ STAB stands for Same Type Attack Bonus! If a Fire-type Pokémon uses a Fire-type move, it gets a 1.5× damage boost. Always try to use moves that match your Pokémon's type for extra power!",
+            "★ STAB stands for Same Type Attack Bonus! If a Fire-type Pokémon uses a Fire-type move, it gets a 1.5x damage boost. Always try to use moves that match your Pokémon's type for extra power!",
         ],
     ),
     # --- Speed ---
@@ -294,88 +346,96 @@ _FALLBACK_DEFAULT = [
     "♦ I'm in offline guide mode! Ask me about specific topics like 'type matchups', 'team building tips', 'how does gacha work', or 'battle strategy' and I'll do my best! ★",
 ]
 
-
-def _fallback_response(message: str) -> str:
-    """Return a rule-based response by matching keywords in the message."""
+def _fallback_response(message: str, is_game: bool = False) -> str:
+    """Return a rule-based response. If is_game is True and no rule matches,
+    give a game-specific fallback instead of the generic default."""
     lowered = message.lower()
-
     for keywords, responses in _FALLBACK_RULES:
         if all(kw in lowered for kw in keywords):
             return random.choice(responses)
-
+    if is_game:
+        return random.choice([
+            "★ That's a great battle question! My AI brain is a bit slow right now. Try asking about type matchups, damage, or PvE stages!",
+            "▶ I know the answer, but I'm having trouble accessing my full knowledge. Ask me about something like 'how does damage work?' and I'll explain!",
+            "♦ I can help with that! Please rephrase your question about types, battles, or team building and I'll give you a detailed answer.",
+        ])
     return random.choice(_FALLBACK_DEFAULT)
 
-
-# =====================================================================
-#  PUBLIC API
-# =====================================================================
-
+# ---------- Public API ----------
 def get_chat_response(message: str, session_id: str) -> str:
-    """Get a response from Tazuna88 for the given message.
-
-    Tries Gemini first; falls back to rule-based responses on failure.
-
-    Args:
-        message: The user's message.
-        session_id: Unique session identifier for conversation history.
-
-    Returns:
-        The response string.
-    """
     global _gemini_available
 
-    # --- Fast path: if we already know Gemini is down, skip to fallback ---
-    if not _gemini_available:
+    # 0. Always use fallback for common greetings (no API call)
+    lowered = message.lower().strip()
+    if any(kw in lowered for kw in ['hello', 'hi', 'hey', 'good morning', 'good evening']):
         return _fallback_response(message)
+
+    # 1. Determine if the question is game‑related (used even if we fall back)
+    is_game_q = _is_game_related(message)
+
+    # 2. If Gemini is unavailable, use fallback for everything
+    if not _gemini_available:
+        return _fallback_response(message, is_game_q)
 
     client = _get_gemini_client()
     if client is None:
-        return _fallback_response(message)
+        return _fallback_response(message, is_game_q)
 
-    # --- Try the Gemini path ---
+    # 3. Gemini is available - try to use it for ALL messages
     try:
         from google import genai
-        
+
         # Retrieve or create conversation history
         if session_id not in _conversations:
             _conversations[session_id] = []
-
         history = _conversations[session_id]
 
-        # In the new SDK, we create a chat with config including system instructions
-        # and initial history.
-        
-        # Format history for new SDK
         formatted_history = []
         for msg in history[-6:]:
             role = "user" if msg["role"] == "user" else "model"
             formatted_history.append({"role": role, "parts": [{"text": msg["content"]}]})
 
-        # Use the requested gemini-2.5-flash model
+        # 4. Build system prompt
+        if is_game_q:
+            # Attempt RAG - if it fails, we still continue with just the system prompt
+            rag_context = _get_rag_context(message)
+            if rag_context:
+                final_prompt = (
+                    SYSTEM_PROMPT +
+                    "\n\nUse the following verified game information when answering:\n" +
+                    rag_context
+                )
+            else:
+                final_prompt = SYSTEM_PROMPT
+        else:
+            # General question - no RAG, but tag it as off‑topic
+            final_prompt = (
+                SYSTEM_PROMPT +
+                "\n\nIf the user asks a question that is not related to Pokémon Battle Arena, "
+                "politely remind them that you can only answer game questions, and add "
+                "'★ This question is outside the game scope!' at the end of your reply."
+            )
         chat = client.chats.create(
             model='gemini-2.5-flash',
             config=genai.types.GenerateContentConfig(
-                system_instruction=SYSTEM_PROMPT,
+                system_instruction=final_prompt,
                 temperature=0.7,
                 max_output_tokens=1000,
             ),
             history=formatted_history
         )
 
-        # Send the message
         response = chat.send_message(message)
         reply = response.text
 
-        # Update stored history with user message and assistant response
+        # Update history
         history.append({"role": "user", "content": message})
         history.append({"role": "assistant", "content": reply})
         _conversations[session_id] = history
 
-        # Limit stored conversations to prevent memory bloat (keep last 6 msgs / 3 turns)
+        # Limit stored conversations
         if len(_conversations[session_id]) > 6:
             _conversations[session_id] = _conversations[session_id][-6:]
-
-        # Cleanup old sessions if too many
         if len(_conversations) > 200:
             oldest_key = next(iter(_conversations))
             del _conversations[oldest_key]
@@ -384,8 +444,11 @@ def get_chat_response(message: str, session_id: str) -> str:
 
     except Exception as e:
         print(f"[Tazuna88] Gemini API error: {e}")
+        if '429' in str(e) or 'rate' in str(e).lower():
+            _gemini_available = False
+            print("[Tazuna88] Rate limit reached - switching to fallback mode.")
         import traceback
         traceback.print_exc()
-        # Fall back for this request only
-        print("[Tazuna88] Using fallback for this request.")
-        return _fallback_response(message)
+        # Fall back to rule-based response, using is_game flag for better messages
+        return _fallback_response(message, is_game_q)
+    
